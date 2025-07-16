@@ -3,12 +3,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 const Login = () => {
   const [input, setInput] = useState({
     email: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const changeEventHandler = (e) => {
     setInput({ ...input, [e.target.name]: e.target.value });
   };
@@ -28,6 +32,7 @@ const Login = () => {
         }
       );
       if (res.data.success) {
+        navigate("/");
         toast.success(res.data.message);
         setInput({ ...input, [e.target.name]: e.target.value });
       }
@@ -48,9 +53,7 @@ const Login = () => {
         >
           <div className="my-4">
             <h1 className="text-center font-bold text-2xl">Flowfy</h1>
-            <p className="text-center italic text-sm">
-              Signup to "flow" with your friends
-            </p>
+            <p className="text-center italic text-sm">Log in to Flowfy</p>
           </div>
           <div>
             <span className="font-medium">Email</span>
@@ -72,9 +75,21 @@ const Login = () => {
               className="focus-visible:ring-transparent my-2"
             />
           </div>
-          <Button type="submit" className="mt-4 w-full">
-            Login
-          </Button>
+          {loading ? (
+            <Button>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            </Button>
+          ) : (
+            <Button type="submit" className="mt-4 w-full">
+              Log in
+            </Button>
+          )}
+          <span className="text-center italic">
+            Don't have an account? ?{" "}
+            <Link to="/signup" className="text-blue-600">
+              Sign Up
+            </Link>
+          </span>
         </form>
       </div>
     </div>

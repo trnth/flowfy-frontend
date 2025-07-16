@@ -3,17 +3,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { toast } from "sonner";
-const Signin = () => {
+import { Link, useNavigate } from "react-router-dom";
+import Login from "./Login";
+import { Loader2 } from "lucide-react";
+const Signup = () => {
   const [input, setInput] = useState({
     username: "",
     email: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const changeEventHandler = (e) => {
     setInput({ ...input, [e.target.name]: e.target.value });
   };
-  const singUpHandler = async (e) => {
+  const signUpHandler = async (e) => {
     console.log(input);
     e.preventDefault();
     try {
@@ -29,12 +33,13 @@ const Signin = () => {
         }
       );
       if (res.data.success) {
+        navigate("/login");
         toast.success(res.data.message);
-        setInput({ ...input, [e.target.name]: e.target.value });
+        setInput({ username: "", email: "", password: "" });
       }
     } catch (error) {
       console.log(error);
-      toast.error(error.responese.data.message);
+      toast.error(error.response.data.message);
     } finally {
       setLoading(false);
     }
@@ -44,13 +49,13 @@ const Signin = () => {
       <div className="flex items-center w-screen h-screen justify-center">
         <form
           className="w-full max-w-sm rounded-2xl bg-white shadow-lg flex flex-col gap-1 p-4"
-          onSubmit={singUpHandler}
+          onSubmit={signUpHandler}
           method="post"
         >
           <div className="my-4">
             <h1 className="text-center font-bold text-2xl">Flowfy</h1>
             <p className="text-center italic text-sm">
-              Signup to "flow" with your friends
+              Sign Up to "flow" with your friends
             </p>
           </div>
           <div>
@@ -83,14 +88,25 @@ const Signin = () => {
               className="focus-visible:ring-transparent my-2"
             />
           </div>
-
-          <Button type="submit" className="mt-4 w-full">
-            Signup
-          </Button>
+          {loading ? (
+            <Button>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            </Button>
+          ) : (
+            <Button type="submit" className="mt-4 w-full">
+              Sign Up
+            </Button>
+          )}
+          <span className="text-center italic">
+            Already have an account ?{" "}
+            <Link to="/login" className="text-blue-600">
+              Log in
+            </Link>
+          </span>
         </form>
       </div>
     </div>
   );
 };
 
-export default Signin;
+export default Signup;
