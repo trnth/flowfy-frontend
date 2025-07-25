@@ -55,7 +55,7 @@ const Post = () => {
         className="rounded-sm my-2 w-full aspect-square object-cover"
         src="https://motgame.vn/stores/news_dataimages/2024/092024/18/12/rapper-mck-ngoai-tinh-voi-hot-girl-khuc-thi-huong-khi-van-con-quen-tlinh-20240918123317.jpg?rt=20240918170304"
         alt="post_image"
-        srcset=""
+        srcSet=""
       />
       <div className="">
         <div className="flex items-center justify-between my-2">
