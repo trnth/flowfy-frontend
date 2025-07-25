@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { FaRegHeart } from "react-icons/fa";
 import { TbMessageCircle, TbSend } from "react-icons/tb";
 import CommentDialog from "./CommentDialog";
-const Post = () => {
+const Post = ({ post }) => {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
   const changeEvenHandler = (e) => {
@@ -23,10 +23,10 @@ const Post = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Avatar>
-            <AvatarImage src="" alt="post_image" />
+            <AvatarImage src={post.author.profilePicture} alt="post_image" />
             <AvatarFallback>CN</AvatarFallback>
           </Avatar>
-          <h1>Username</h1>
+          <h1 className="font-medium mr-2">{post.author.username}</h1>
         </div>
         <Dialog>
           <DialogTrigger asChild>
@@ -53,7 +53,7 @@ const Post = () => {
       </div>
       <img
         className="rounded-sm my-2 w-full aspect-square object-cover"
-        src="https://motgame.vn/stores/news_dataimages/2024/092024/18/12/rapper-mck-ngoai-tinh-voi-hot-girl-khuc-thi-huong-khi-van-con-quen-tlinh-20240918123317.jpg?rt=20240918170304"
+        src={post.image}
         alt="post_image"
         srcSet=""
       />
@@ -75,8 +75,8 @@ const Post = () => {
         </div>
         <span className="font-medium mb-2">1k likes</span>
         <p>
-          <span className="font-medium mr-2">username</span>
-          caption
+          <span className="font-medium mr-2">{post.author.username}</span>
+          {post.caption}
         </p>
         <span
           onClick={() => setOpen(true)}

@@ -7,6 +7,8 @@ import { readFileAsDataURL } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
+import { setPosts } from "@/redux/postSlice";
 
 const CreatePost = ({ open, setOpen }) => {
   const imgRef = useRef();
@@ -14,6 +16,10 @@ const CreatePost = ({ open, setOpen }) => {
   const [caption, setCaption] = useState("");
   const [imagePreview, setImagePreview] = useState("");
   const [loading, setLoading] = useState(false);
+  const { user } = useSelector((store) => store.auth);
+  const { posts } = useSelector((store) => store.post);
+
+  const dispatch = useDispatch();
   const fileChangeHandler = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -41,7 +47,9 @@ const CreatePost = ({ open, setOpen }) => {
         }
       );
       if (res.data.success) {
+        dispatch(setPosts([res.data.post, ...posts]));
         toast.success(res.data.message);
+        setOpen(false);
       }
     } catch (error) {
       toast.error(error.response.data.message);
@@ -53,17 +61,17 @@ const CreatePost = ({ open, setOpen }) => {
     <div>
       <Dialog open={open}>
         <DialogContent onInteractOutside={() => setOpen(false)}>
-          <DialogTitle className=" items-center font-semibold ">
+          <DialogTitle className="items-center font-semibold flex justify-center">
             Create New Post
           </DialogTitle>
           <div className="flex gap-3 items-center">
             <Avatar>
-              <AvatarImage src="" alt="img" />
+              <AvatarImage src={user.profilePicture} alt="img" />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="font-semibold text-xs">Username</h1>
-              <span className="text-gray-600 text-xs">Bio here...</span>
+              <h1 className="font-semibold text-xs">{user.username}</h1>
+              <span className="text-gray-600 text-xs">{user.bio}</span>
             </div>
           </div>
           <Textarea
