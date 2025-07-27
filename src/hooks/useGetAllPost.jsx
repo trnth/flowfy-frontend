@@ -1,6 +1,6 @@
 import { setPosts } from "@/redux/postSlice";
 import axios from "axios";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 
 const useGetAllPost = () => {
@@ -12,7 +12,7 @@ const useGetAllPost = () => {
           withCredentials: true,
         });
         if (res.data.success) {
-          console.log(res.data);
+          console.log(res.data.posts);
           dispatch(setPosts(res.data.posts));
         }
       } catch (error) {

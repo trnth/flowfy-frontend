@@ -4,6 +4,7 @@ import MainLayout from "@/components/MainLayout";
 import Home from "@/components/Home";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Profile from "./components/Profile";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const browserRouter = createBrowserRouter([
   {
@@ -12,9 +13,20 @@ const browserRouter = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <Home />,
+        element: (
+          <ProtectedRoute>
+            <Home />,
+          </ProtectedRoute>
+        ),
       },
-      { path: "/profile", element: <Profile /> },
+      {
+        path: "/profile",
+        element: (
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   { path: "/login", element: <Login /> },

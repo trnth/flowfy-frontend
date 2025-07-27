@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import axios from "axios";
 import store from "@/redux/store";
-import { setPosts } from "@/redux/postSlice";
+import { setPosts, setSelectedPost } from "@/redux/postSlice";
 const Post = ({ post }) => {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
@@ -166,7 +166,10 @@ const Post = ({ post }) => {
               <FaRegHeart onClick={likeOrDislikeHandler} size={"22px"} />
             )}
             <TbMessageCircle
-              onClick={() => setOpen(true)}
+              onClick={() => {
+                dispatch(setSelectedPost(post));
+                setOpen(true);
+              }}
               size={"22px"}
               className="cursor-pointer hover:text-gray-600"
             />
@@ -183,7 +186,10 @@ const Post = ({ post }) => {
           {post.caption}
         </p>
         <span
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            dispatch(setSelectedPost(post));
+            setOpen(true);
+          }}
           className="cursor-pointer text-sm text-gray-400"
         >
           View all {comment.length} comments

@@ -49,6 +49,9 @@ const CreatePost = ({ open, setOpen }) => {
       if (res.data.success) {
         dispatch(setPosts([res.data.post, ...posts]));
         toast.success(res.data.message);
+        setCaption("");
+        setFile("");
+        setImagePreview("");
         setOpen(false);
       }
     } catch (error) {
@@ -66,12 +69,12 @@ const CreatePost = ({ open, setOpen }) => {
           </DialogTitle>
           <div className="flex gap-3 items-center">
             <Avatar>
-              <AvatarImage src={user.profilePicture} alt="img" />
+              <AvatarImage src={user?.profilePicture} alt="img" />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="font-semibold text-xs">{user.username}</h1>
-              <span className="text-gray-600 text-xs">{user.bio}</span>
+              <h1 className="font-semibold text-xs">{user?.username}</h1>
+              <span className="text-gray-600 text-xs">{user?.bio}</span>
             </div>
           </div>
           <Textarea

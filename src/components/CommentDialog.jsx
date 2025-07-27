@@ -1,78 +1,117 @@
-import React from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link } from "react-router-dom";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Heart, X } from "lucide-react";
 import { Button } from "./ui/button";
-import { useState } from "react";
+import { useSelector } from "react-redux";
+import Comment from "./Comment";
 const CommentDialog = ({ open, setOpen }) => {
   const [text, setText] = useState("");
-  const changeEvenHandler = (e) => {
+  const { selectedPost } = useSelector((store) => store.post);
+
+  const changeEventHandler = (e) => {
     const inputText = e.target.value;
-    if (inputText.trim()) {
-      setText(inputText);
-    } else {
-      setText("");
-    }
+    setText(inputText.trim() ? inputText : "");
   };
+
   const sendMessageHandler = () => {
+    // TODO: Thay bằng API call để gửi comment
     alert(text);
+    setText("");
   };
+
   return (
-    <Dialog open={open}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
-        className="max-w-5xl w-full p-0 flex flex-col"
-        onInteractOutside={() => setOpen(false)}
+        className="w-[90vw] max-w-[900px] min-w-[500px] h-[80vh] p-0 flex rounded-lg overflow-hidden sm:max-w-[900px] border-0"
+        style={{ maxWidth: "900px !important" }}
       >
-        <div className="flex flex-1">
-          <div className="w-1/2">
-            <img
-              src="https://motgame.vn/stores/news_dataimages/2024/092024/18/12/rapper-mck-ngoai-tinh-voi-hot-girl-khuc-thi-huong-khi-van-con-quen-tlinh-20240918123317.jpg?rt=20240918170304"
-              alt="post_image"
-              srcset=""
-              className=" w-full h-full object-cover rounded-l-lg"
-            />
+        <div className="flex w-full h-full">
+          {/* Bên trái - ảnh bài post */}
+          <div className="flex-[0.6] h-full bg-black">
+            {selectedPost?.image ? (
+              <img
+                src={selectedPost.image}
+                alt="post_img"
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-500">
+                No image available
+              </div>
+            )}
           </div>
-          <div className="w-1/2 flex-col flex justify-between">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-3 items-center">
-                <Link>
-                  <Avatar>
-                    <AvatarImage src="" alt="post_image" />
+
+          {/* Bên phải - phần comment */}
+          <div className="flex-[0.4] h-full flex flex-col bg-white">
+            {/* Header */}
+            <div className="flex items-center justify-between p-3 border-b">
+              <div className="flex gap-2 items-center">
+                <Link to={`/${selectedPost?.author?.username || ""}`}>
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={selectedPost?.author?.profilePicture} />
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
                 </Link>
-                <div>
-                  <Link className="font-semibold text-xs">username</Link>
-                </div>
+                <Link
+                  to={`/${selectedPost?.author?.username || ""}`}
+                  className="font-semibold text-sm hover:underline"
+                >
+                  {selectedPost?.author?.username || "Unknown"}
+                </Link>
               </div>
-
-              <Dialog>
-                <DialogTrigger asChild>
-                  <MoreHorizontal className="cursor-pointer " />
-                </DialogTrigger>
-                <DialogContent className="flex flex-col items-center text-sm text-center">
-                  <div className="cursor-pointer w-fit text-[#ED4956] font-bold">
-                    Unfollow
-                  </div>
-                  <div className="cursor-pointer w-fit  font-bold">
-                    Add to favorites
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <div className="flex items-center gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <MoreHorizontal className="cursor-pointer w-5 h-5" />
+                  </DialogTrigger>
+                  <DialogContent className="flex flex-col items-center text-sm p-4 rounded-t-lg sm:max-w-[400px] border-0">
+                    <div className="cursor-pointer w-full text-[#ED4956] font-bold py-2">
+                      Unfollow
+                    </div>
+                    <div className="cursor-pointer w-full py-2">
+                      Add to favorites
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <X
+                  className="cursor-pointer w-5 h-5"
+                  onClick={() => setOpen(false)}
+                />
+              </div>
             </div>
             <hr />
-            <div className="flex-1 overflow-y-auto max-h-96 p-4">comments</div>
-            <div className="p-4">
-              <div className=" flex items-center gap-2">
+            {/* Comment list */}
+            <div className="flex-1 overflow-y-auto p-4 min-h-0">
+              {selectedPost?.comments?.length > 0 ? (
+                selectedPost.comments.map((comment) => (
+                  <Comment key={comment._id} comment={comment} />
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  Chưa có bình luận
+                </div>
+              )}
+            </div>
+            {/* Input - cố định ở dưới đáy */}
+            <div className="p-3 border-t">
+              <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  placeholder="Add a comment..."
-                  className="w-full outline-none "
-                  onChange={changeEvenHandler}
+                  value={text}
+                  onChange={changeEventHandler}
+                  placeholder="Thêm bình luận..."
+                  className="w-full outline-none text-sm border-b border-gray-300 py-1 bg-transparent"
                 />
-                <Button disabled={!text.trim()} onClick={sendMessageHandler}>
-                  Send
+                <Button
+                  disabled={!text.trim()}
+                  onClick={sendMessageHandler}
+                  className={`text-sm ${
+                    text.trim() ? "text-[#0095F6]" : "text-gray-400"
+                  } bg-transparent hover:bg-transparent`}
+                >
+                  Đăng
                 </Button>
               </div>
             </div>

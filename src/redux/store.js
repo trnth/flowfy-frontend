@@ -1,6 +1,6 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import authSlide from "./authSlice.js";
-import portSlide from "./postSlice.js";
+import postSlide from "./postSlice.js";
 import {
   persistStore,
   persistReducer,
@@ -22,7 +22,7 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
   auth: authSlide,
-  post: portSlide,
+  post: postSlide,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -37,3 +37,4 @@ const store = configureStore({
     }),
 });
 export default store;
+export const persistor = persistStore(store);
