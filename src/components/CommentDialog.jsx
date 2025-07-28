@@ -1,24 +1,66 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link } from "react-router-dom";
 import { MoreHorizontal, Heart, X } from "lucide-react";
 import { Button } from "./ui/button";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Comment from "./Comment";
+import { toast } from "sonner";
+import { setPosts, setSelectedPost } from "@/redux/postSlice";
+import axios from "axios";
 const CommentDialog = ({ open, setOpen }) => {
   const [text, setText] = useState("");
-  const { selectedPost } = useSelector((store) => store.post);
-
+  const { selectedPost, posts } = useSelector((store) => store.post);
+  const [comment, setComment] = useState([]);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (selectedPost) {
+      setComment(selectedPost.comments);
+    }
+  }, [selectedPost]);
   const changeEventHandler = (e) => {
     const inputText = e.target.value;
-    setText(inputText.trim() ? inputText : "");
+    if (inputText.trim()) {
+      setText(inputText);
+    } else {
+      setText("");
+    }
   };
 
-  const sendMessageHandler = () => {
-    // TODO: Thay bằng API call để gửi comment
-    alert(text);
-    setText("");
+  const sendMessageHandler = async () => {
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/v1/post/${selectedPost._id}/comment`,
+        { text },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+      if (res.data.success) {
+        const updateCommentData = [res.data.comment, ...comment];
+        setComment(updateCommentData);
+        const updatePostData = posts.map((postItems) =>
+          postItems._id == selectedPost._id
+            ? {
+                ...postItems,
+                comments: updateCommentData,
+              }
+            : postItems
+        );
+        dispatch(setPosts(updatePostData));
+        dispatch(
+          setSelectedPost({ ...selectedPost, comments: updateCommentData })
+        );
+        toast.success(res.data.message);
+        setText("");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (

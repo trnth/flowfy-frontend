@@ -75,7 +75,7 @@ const Post = ({ post }) => {
         }
       );
       if (res.data.success) {
-        const updateCommentData = [...comment, res.data.comment];
+        const updateCommentData = [res.data.comment, ...comment];
         setComment(updateCommentData);
         const updatePostData = posts.map((postItems) =>
           postItems._id == post._id
