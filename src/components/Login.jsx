@@ -10,7 +10,7 @@ import { useDispatch } from "react-redux";
 import { setAuthUser } from "@/redux/authSlice";
 const Login = () => {
   const [input, setInput] = useState({
-    email: "",
+    loginValue: "",
     password: "",
   });
   const [loading, setLoading] = useState(false);
@@ -60,13 +60,14 @@ const Login = () => {
             <p className="text-center italic text-sm">Log in to Flowfy</p>
           </div>
           <div>
-            <span className="font-medium">Email</span>
+            <span className="font-medium">Email or Username</span>
             <Input
-              type="email"
-              name="email"
-              value={input.email}
+              text="text"
+              name="loginValue"
+              value={input.loginValue}
               onChange={changeEventHandler}
               className="focus-visible:ring-transparent my-2"
+              placeholder="Email or Username"
             />
           </div>
           <div>
@@ -77,6 +78,7 @@ const Login = () => {
               value={input.password}
               onChange={changeEventHandler}
               className="focus-visible:ring-transparent my-2"
+              placeholder="Password"
             />
           </div>
           {loading ? (
