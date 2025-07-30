@@ -1,9 +1,9 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import Feed from "@/components/Feed";
-import RightSiderbar from "@/components/RightSiderbar";
 import useGetAllPost from "@/hooks/useGetAllPost";
 import useGetSuggestedUsers from "@/hooks/useGetSuggestedUsers";
+import RightSidebar from "@/components/RightSiderbar";
 const Home = () => {
   useGetAllPost();
   useGetSuggestedUsers();
@@ -13,7 +13,7 @@ const Home = () => {
         <Feed />
         <Outlet />
       </div>
-      <RightSiderbar />
+      <RightSidebar />
     </div>
   );
 };

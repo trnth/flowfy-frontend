@@ -40,6 +40,8 @@ const LeftSidebar = () => {
       logoutHandler();
     } else if (textType == "Create") {
       setOpen(true);
+    } else if (textType == "Profile") {
+      navigate(`/profile/${user?._id}`);
     }
   };
   const sidebarItems = [
@@ -82,9 +84,12 @@ const LeftSidebar = () => {
     },
   ];
   return (
-    <div className="fixed top-0 z-10 left-0 px-4 border-r border-gray-300 w-[16%] h-screen">
+    <div className="fixed top-0 z-10 left-0 px-4 border-r border-gray-300 lg:w-[16%] h-screen hidden md:block ">
       <div className="flex flex-col">
-        <h1 className="text-center font-bold text-2xl mt-2 pl-3">Flowfy</h1>
+        <h1 className="text-center font-bold text-2xl mt-2 lg:pl-3">
+          <span className="block lg:hidden">F</span>
+          <span className="hidden lg:inline">Flowfy</span>
+        </h1>
         {sidebarItems.map((item, index) => {
           return (
             <div
@@ -92,7 +97,7 @@ const LeftSidebar = () => {
               key={index}
               className="flex items-center gap-4 relative hover:bg-gray-100 cursor-pointer rounded-r-lg p-3"
             >
-              {item.icon} <span>{item.text}</span>
+              {item.icon} <span className="hidden lg:inline">{item.text}</span>
             </div>
           );
         })}

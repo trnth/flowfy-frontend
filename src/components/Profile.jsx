@@ -1,9 +1,14 @@
-import React from 'react'
+import React from "react";
+import { Avatar, AvatarImage } from "./ui/avatar";
 
 const Profile = () => {
   return (
-    <div>Profile</div>
-  )
-}
+    <div>
+      <Avatar>
+        <AvatarImage />
+      </Avatar>
+    </div>
+  );
+};
 
-export default Profile
+export default Profile;
