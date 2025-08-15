@@ -5,6 +5,7 @@ import Home from "@/components/Home";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Profile from "./components/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
+import EditProfile from "./components/EditProfile";
 
 const browserRouter = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const browserRouter = createBrowserRouter([
             <Profile />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: "accounts/edit",
+        element: <EditProfile />,
       },
     ],
   },

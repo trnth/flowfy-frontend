@@ -42,6 +42,8 @@ const LeftSidebar = () => {
       setOpen(true);
     } else if (textType == "Profile") {
       navigate(`/profile/${user?._id}`);
+    } else if (textType == "Home") {
+      navigate("/");
     }
   };
   const sidebarItems = [
@@ -73,7 +75,7 @@ const LeftSidebar = () => {
       icon: (
         <Avatar className="w-6 h-6">
           <AvatarImage src={user?.profilePicture} alt="@shadcn" />
-          <AvatarFallback>CN</AvatarFallback>
+          <AvatarFallback> CN</AvatarFallback>
         </Avatar>
       ),
       text: "Profile",

@@ -25,7 +25,7 @@ const SuggestedUsers = () => {
                     src={user?.profilePicture}
                     alt="user_profilePicture"
                   />
-                  <AvatarFallback>{user?.username?.[0]}</AvatarFallback>
+                  <AvatarFallback>CN</AvatarFallback>
                 </Avatar>
               </Link>
               <div>
