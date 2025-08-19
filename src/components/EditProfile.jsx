@@ -14,9 +14,10 @@ import {
 import axios from "axios";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { setAuthUser } from "@/redux/authSlice";
 const EditProfile = () => {
   const imageRef = useRef();
-  const { userProfile, user } = useSelector((store) => store.auth);
+  const { user } = useSelector((store) => store.auth);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState({
     profilePhoto: user?.profilePicture,
@@ -27,8 +28,8 @@ const EditProfile = () => {
   const dispatch = useDispatch();
 
   const fileChangedHandler = (e) => {
-    const file = e.target.file?.[0];
-    if (file) setInput({ ...input, profilePicture: file });
+    const file = e.target.files?.[0];
+    if (file) setInput({ ...input, profilePhoto: file });
   };
 
   const selectChangeHandler = (value) => {
@@ -45,7 +46,7 @@ const EditProfile = () => {
     try {
       setLoading(true);
       const res = await axios.post(
-        "http://localhost:5000/api/v1/profile/edit",
+        "http://localhost:5000/api/v1/user/profile/edit",
         formData,
         {
           headers: {
@@ -61,10 +62,15 @@ const EditProfile = () => {
           profilePicture: res.data.user?.profilePicture,
           gender: res.data.user?.gender,
         };
+        dispatch(setAuthUser(updateData));
+        navigate(`/profile/${user?._id}`);
         toast.success(res.data.message);
+        setLoading(false);
       }
     } catch (error) {
+      setLoading(false);
       console.log(error);
+      toast.error(error.response.data.message);
     }
   };
   return (
@@ -87,7 +93,12 @@ const EditProfile = () => {
               </span>
             </div>
           </div>
-          <input ref={imageRef} type="file" className="hidden" />
+          <input
+            ref={imageRef}
+            type="file"
+            onChange={fileChangedHandler}
+            className="hidden"
+          />
           <Button
             onClick={() => imageRef?.current.click()}
             className="bg-[#0095F6] h-8 hover:bg-[#318bc7]"
@@ -98,8 +109,8 @@ const EditProfile = () => {
         <div>
           <h1 className="font-bold text-xl mb-2">Bio</h1>
           <Textarea
-            value={input.bio}
-            onClick={(e) => {
+            defaultValue={input.bio}
+            onChange={(e) => {
               setInput({ ...input, bio: e.target.value });
             }}
             name="bio"
