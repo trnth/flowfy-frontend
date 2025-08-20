@@ -7,12 +7,8 @@ import Profile from "./components/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EditProfile from "./components/EditProfile";
 import ChatPage from "./components/ChatPage";
-import { io } from "socket.io-client";
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import store from "./redux/store";
-import { setSocket } from "./redux/socketSlice";
-import { setOnlineUsers } from "./redux/chatSlice";
+import useAuthCheck from "./hooks/useAuthCheck";
+import useSocket from "./hooks/useSocket";
 const browserRouter = createBrowserRouter([
   {
     path: "/",
@@ -36,11 +32,19 @@ const browserRouter = createBrowserRouter([
       },
       {
         path: "/accounts/edit",
-        element: <EditProfile />,
+        element: (
+          <ProtectedRoute>
+            <EditProfile />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "/direct/inbox/",
-        element: <ChatPage />,
+        element: (
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        ),
       },
     ],
   },
@@ -49,37 +53,8 @@ const browserRouter = createBrowserRouter([
 ]);
 
 function App() {
-  const { user } = useSelector((store) => store.auth);
-  const { socket } = useSelector((store) => store.socketio);
-  const dispatch = useDispatch();
-  useEffect(() => {
-    if (user) {
-      const socketio = io("http://localhost:5000", {
-        query: {
-          userId: user?._id,
-        },
-        transports: ["websocket"],
-      });
-      dispatch(setSocket(socketio));
-
-      // listen all the events
-      socketio.on("getOnlineUsers", (onlineUsers) => {
-        dispatch(setOnlineUsers(onlineUsers));
-      });
-
-      socketio.on("notification", (notification) => {
-        dispatch(setLikeNotification(notification));
-      });
-
-      return () => {
-        socketio.close();
-        dispatch(setSocket(null));
-      };
-    } else if (socket) {
-      socket.close();
-      dispatch(setSocket(null));
-    }
-  }, [user, dispatch]);
+  const user = useAuthCheck();
+  useSocket(user);
   return (
     <>
       <RouterProvider router={browserRouter} />

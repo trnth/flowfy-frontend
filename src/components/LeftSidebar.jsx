@@ -13,7 +13,10 @@ import { toast } from "sonner";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { setAuthUser } from "@/redux/authSlice";
+import { setAuthUser, resetAuth } from "@/redux/authSlice";
+import { resetPosts } from "@/redux/postSlice";
+import { resetSocket } from "@/redux/socketSlice";
+import { resetChat } from "@/redux/chatSlice";
 import CreatePost from "./CreatePost";
 
 const LeftSidebar = () => {
@@ -23,16 +26,21 @@ const LeftSidebar = () => {
   const { user } = useSelector((store) => store.auth);
   const logoutHandler = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/v1/user/logout", {
+      const res = await axios.get("http://localhost:5000/api/v1/auth/logout", {
         withCredentials: true,
       });
+      dispatch(resetAuth());
+      dispatch(resetPosts());
+      dispatch(resetSocket());
+      dispatch(resetChat());
       if (res.data.success) {
         dispatch(setAuthUser(null));
         navigate("/login");
         toast.success(res.data.message);
       }
     } catch (error) {
-      toast.error(error.response.data.message);
+      console.log(error);
+      //toast.error(error.response.data.message);
     }
   };
   const sidebarHandler = (textType) => {
