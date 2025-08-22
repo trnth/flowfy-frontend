@@ -3,6 +3,7 @@ import { io } from "socket.io-client";
 import { useSelector, useDispatch } from "react-redux";
 import { setOnlineUsers } from "@/redux/chatSlice";
 import { setSocketStatus } from "@/redux/socketSlice";
+import { setLikeNotification } from "@/redux/notificationSlice";
 
 const useSocket = () => {
   const { user, isAuthLoading } = useSelector((store) => store.auth);
@@ -30,6 +31,9 @@ const useSocket = () => {
         dispatch(setOnlineUsers(onlineUsers));
       });
 
+      socket.on("notification", (notification) => {
+        dispatch(setLikeNotification(notification));
+      });
       return () => {
         socket.disconnect();
         dispatch(setSocketStatus(false));

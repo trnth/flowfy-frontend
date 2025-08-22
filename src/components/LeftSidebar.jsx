@@ -18,6 +18,9 @@ import { resetPosts } from "@/redux/postSlice";
 import { resetSocket } from "@/redux/socketSlice";
 import { resetChat } from "@/redux/chatSlice";
 import CreatePost from "./CreatePost";
+import { resetNotification } from "@/redux/notificationSlice";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Button } from "./ui/button";
 
 const LeftSidebar = () => {
   const [open, setOpen] = useState(false);
@@ -26,6 +29,7 @@ const LeftSidebar = () => {
   const { user } = useSelector((store) => store.auth);
   const location = useLocation();
   const isInboxPage = location.pathname.startsWith("/direct/inbox");
+  const { likeNotifications } = useSelector((store) => store.notification);
   const logoutHandler = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/v1/auth/logout", {
@@ -35,6 +39,7 @@ const LeftSidebar = () => {
       dispatch(resetPosts());
       dispatch(resetSocket());
       dispatch(resetChat());
+      dispatch(resetNotification());
       if (res.data.success) {
         dispatch(setAuthUser(null));
         navigate("/login");
@@ -45,6 +50,7 @@ const LeftSidebar = () => {
       //toast.error(error.response.data.message);
     }
   };
+
   const sidebarHandler = (textType) => {
     if (textType == "LogOut") {
       logoutHandler();
@@ -77,7 +83,7 @@ const LeftSidebar = () => {
     },
     {
       icon: <Heart />,
-      text: "Notification",
+      text: "Notifications",
     },
     {
       icon: <PlusSquare />,
@@ -130,6 +136,47 @@ const LeftSidebar = () => {
             {item.icon}
             {!isInboxPage && (
               <span className="hidden lg:inline">{item.text}</span>
+            )}
+            {item.text === "Notifications" && likeNotifications.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="rounded-full h-5 w-5 bg-red-600 hover:bg-red-600 absolute bottom-6 left-6"
+                  >
+                    {likeNotifications.length}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent>
+                  <div>
+                    {likeNotifications.length === 0 ? (
+                      <p>No new notification</p>
+                    ) : (
+                      likeNotifications.map((notification) => {
+                        return (
+                          <div
+                            key={notification.userId}
+                            className="flex items-center gap-2 my-2"
+                          >
+                            <Avatar>
+                              <AvatarImage
+                                src={notification.userDetail?.profilePicture}
+                              />
+                              <AvatarFallback>CN</AvatarFallback>
+                            </Avatar>
+                            <p className="text-sm">
+                              <span className="font-bold">
+                                {notification.userDetail?.username}
+                              </span>{" "}
+                              liked your post
+                            </p>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
           </div>
         ))}

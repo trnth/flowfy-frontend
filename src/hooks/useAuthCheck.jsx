@@ -16,6 +16,11 @@ const useAuthCheck = () => {
         dispatch(setAuthUser(res.data.user));
       } catch (err) {
         dispatch(resetAuth());
+        dispatch(resetAuth());
+        dispatch(resetPosts());
+        dispatch(resetSocket());
+        dispatch(resetChat());
+        dispatch(resetNotification());
       }
     };
     checkAuth();
