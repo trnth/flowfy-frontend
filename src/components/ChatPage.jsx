@@ -22,7 +22,7 @@ const ChatPage = () => {
     try {
       const res = await axios.post(
         `http://localhost:5000/api/v1/message/send/${receiverId}`,
-        textMessage,
+        { textMessage },
         {
           headers: {
             "Content-Type": "application/json",
@@ -31,6 +31,7 @@ const ChatPage = () => {
         }
       );
       if (res.data.success) {
+        setTextMessage("");
         dispatch(setMessages([...messages, res.data.newMessage]));
       }
     } catch (error) {
@@ -38,16 +39,14 @@ const ChatPage = () => {
     }
   };
 
-  useEffect(() => {
-    dispatch(setSelectedUser(null));
-  });
-
   return (
-    <div className="flex ml-[16%] h-screen">
-      <section className="w-full md:w-1/4 my-4">
-        <div className="flex justify-between items-center">
-          <h1 className="font-bold mb-4 px-3 text-xl">{user?.username}</h1>
-          <FaRegEdit className="w-8 h-8 mx-4 mb-4" />
+    <div className="flex md:ml-[80px] h-screen ">
+      <section className="w-20 lg:w-[350px] border-r border-gray-300">
+        <div className="flex justify-center lg:justify-between items-center">
+          <h1 className="font-bold my-4 px-3 text-lg hidden lg:block">
+            {user?.username}
+          </h1>
+          <FaRegEdit className="w-8 h-8 lg:mx-4 my-4" />
         </div>
         <hr className="mb-4 border-gray-300" />
         <div className="overflow-y-auto h-[80vh]">
@@ -55,6 +54,7 @@ const ChatPage = () => {
             const isOnline = onlineUsers?.includes(suggestedUsers?._id);
             return (
               <div
+                key={suggestedUsers?._id}
                 onClick={() => dispatch(setSelectedUser(suggestedUsers))}
                 className="flex gap-3 items-center p-3 hover:bg-gray-50 cursor-pointer"
               >
@@ -64,10 +64,8 @@ const ChatPage = () => {
                   ></AvatarImage>
                   <AvatarFallback>CN</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
-                  <span className=" font-medium">
-                    {suggestedUsers?.username}
-                  </span>
+                <div className="hidden lg:flex lg:flex-col">
+                  <span className="">{suggestedUsers?.username}</span>
                   <span
                     className={`text-xs font-bold ${
                       isOnline ? "text-green-600" : "text-red-600"
@@ -82,18 +80,18 @@ const ChatPage = () => {
         </div>
       </section>
       {selectedUser ? (
-        <section className="flex-1 border-l border-l-gray-300 flex flex-col h-full">
-          <div className="flex gap-3 items-center px-3 py-3 border-b border-gray-300 sticky top-0 bg-white z-10">
-            <Avatar>
+        <section className="flex-1  flex flex-col h-full">
+          <div className="flex gap-3 items-center px-3 py-1 border-b border-gray-300 sticky top-0 bg-white z-10">
+            <Avatar className="h-14 w-14">
               <AvatarImage src={selectedUser?.profilePicture} />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
-            <div className="flex flex-col">
+            <div className="flex flex-col font-semibold">
               <span>{selectedUser?.username}</span>
             </div>
           </div>
           <Messages selectedUser={selectedUser} />
-          <div className="flex items-center p-4 border-t border-t-gray-500">
+          <div className="flex items-center p-4 ">
             <Input
               value={textMessage}
               onChange={(e) => setTextMessage(e.target.value)}
@@ -101,16 +99,18 @@ const ChatPage = () => {
               className="flex-1 mr-2 focus-visible:ring-transparent"
               placeholder="Message..."
             />
-            <Button onClick={sendMessageHandler(selectedUser?._id)}>
-              Send
-            </Button>
+            {textMessage.trim() ? (
+              <Button onClick={() => sendMessageHandler(selectedUser?._id)}>
+                Send
+              </Button>
+            ) : null}
           </div>
         </section>
       ) : (
-        <div>
+        <div className="flex flex-col items-center justify-center mx-auto">
           <MessageCircleCode className="w-32 h-32 my-4" />
-          <h1>Your message</h1>
-          <span>Send a message to start a chat</span>
+          <h1 className="font-medium">Your messages</h1>
+          <span>Send a message to start a chat.</span>
         </div>
       )}
     </div>

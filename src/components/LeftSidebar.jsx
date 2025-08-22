@@ -8,12 +8,12 @@ import {
   LogOut,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { setAuthUser, resetAuth } from "@/redux/authSlice";
+import { setAuthUser, resetAuth, setSelectedUser } from "@/redux/authSlice";
 import { resetPosts } from "@/redux/postSlice";
 import { resetSocket } from "@/redux/socketSlice";
 import { resetChat } from "@/redux/chatSlice";
@@ -24,6 +24,8 @@ const LeftSidebar = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((store) => store.auth);
+  const location = useLocation();
+  const isInboxPage = location.pathname.startsWith("/direct/inbox");
   const logoutHandler = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/v1/auth/logout", {
@@ -96,24 +98,43 @@ const LeftSidebar = () => {
     },
   ];
   return (
-    <div className="fixed top-0 z-10 left-0 px-4 border-r border-gray-300 lg:w-[16%] h-screen hidden md:block ">
+    <div
+      className={`fixed top-0 z-10 left-0 px-4 border-r border-gray-300 h-screen hidden md:block transition-all duration-300 ease-in-out
+        ${isInboxPage ? "w-[80px]" : "w-[60px] md:w-[80px] lg:w-[16%]"}
+      `}
+    >
       <div className="flex flex-col">
-        <h1 className="text-center font-bold text-2xl mt-2 lg:pl-3">
-          <span className="block lg:hidden">F</span>
-          <span className="hidden lg:inline">Flowfy</span>
+        <h1
+          className={`text-center font-bold text-2xl my-4 lg:pl-3 px-3
+          transition-opacity duration-300 ease-in-out
+        `}
+        >
+          <span className={`${isInboxPage ? "block" : "block lg:hidden"}`}>
+            F
+          </span>
+          <span
+            className={`${
+              isInboxPage ? "opacity-0 absolute" : "hidden lg:inline"
+            }`}
+          >
+            Flowfy
+          </span>
         </h1>
-        {sidebarItems.map((item, index) => {
-          return (
-            <div
-              onClick={() => sidebarHandler(item.text)}
-              key={index}
-              className="flex items-center gap-4 relative hover:bg-gray-100 cursor-pointer rounded-r-lg p-3"
-            >
-              {item.icon} <span className="hidden lg:inline">{item.text}</span>
-            </div>
-          );
-        })}
+
+        {sidebarItems.map((item, index) => (
+          <div
+            onClick={() => sidebarHandler(item.text)}
+            key={index}
+            className="flex items-center gap-4 relative hover:bg-gray-100 cursor-pointer rounded-lg p-3"
+          >
+            {item.icon}
+            {!isInboxPage && (
+              <span className="hidden lg:inline">{item.text}</span>
+            )}
+          </div>
+        ))}
       </div>
+
       <CreatePost open={open} setOpen={setOpen} />
     </div>
   );

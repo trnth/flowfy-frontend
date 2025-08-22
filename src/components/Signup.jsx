@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 const Signup = () => {
   const [input, setInput] = useState({
     username: "",
+    name: "",
     email: "",
     password: "",
   });
@@ -35,7 +36,7 @@ const Signup = () => {
       if (res.data.success) {
         navigate("/login");
         toast.success(res.data.message);
-        setInput({ username: "", email: "", password: "" });
+        setInput({ username: "", name: "", email: "", password: "" });
       }
     } catch (error) {
       console.log(error);
@@ -64,6 +65,16 @@ const Signup = () => {
               type="text"
               name="username"
               value={input.username}
+              onChange={changeEventHandler}
+              className="focus-visible:ring-transparent my-2"
+            />
+          </div>
+          <div>
+            <span className="font-medium">Name</span>
+            <Input
+              type="text"
+              name="name"
+              value={input.name}
               onChange={changeEventHandler}
               className="focus-visible:ring-transparent my-2"
             />

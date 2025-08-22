@@ -9,6 +9,10 @@ import EditProfile from "./components/EditProfile";
 import ChatPage from "./components/ChatPage";
 import useAuthCheck from "./hooks/useAuthCheck";
 import useSocket from "./hooks/useSocket";
+import { useDispatch, useSelector } from "react-redux";
+import store from "./redux/store";
+import { useEffect } from "react";
+import { setSelectedUser } from "./redux/authSlice";
 const browserRouter = createBrowserRouter([
   {
     path: "/",
@@ -53,8 +57,18 @@ const browserRouter = createBrowserRouter([
 ]);
 
 function App() {
-  const user = useAuthCheck();
-  useSocket(user);
+  useAuthCheck();
+  const socket = useSocket();
+  const { isAuthLoading, user } = useSelector((store) => store.auth);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (location.pathname !== "/direct/inbox") {
+      dispatch(setSelectedUser(null));
+    }
+  }, [location.pathname, dispatch]);
+  if (isAuthLoading) {
+    return <div>Loading...</div>;
+  }
   return (
     <>
       <RouterProvider router={browserRouter} />
