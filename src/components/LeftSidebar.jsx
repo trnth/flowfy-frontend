@@ -29,7 +29,7 @@ const LeftSidebar = () => {
   const { user } = useSelector((store) => store.auth);
   const location = useLocation();
   const isInboxPage = location.pathname.startsWith("/direct/inbox");
-  const { likeNotifications } = useSelector((store) => store.notification);
+  const { notifications } = useSelector((store) => store.notification);
   const logoutHandler = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/v1/auth/logout", {
@@ -137,22 +137,22 @@ const LeftSidebar = () => {
             {!isInboxPage && (
               <span className="hidden lg:inline">{item.text}</span>
             )}
-            {item.text === "Notifications" && likeNotifications.length > 0 && (
+            {item.text === "Notifications" && notifications.length > 0 && (
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     size="icon"
                     className="rounded-full h-5 w-5 bg-red-600 hover:bg-red-600 absolute bottom-6 left-6"
                   >
-                    {likeNotifications.length}
+                    {notifications.length}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent>
                   <div>
-                    {likeNotifications.length === 0 ? (
+                    {notifications.length === 0 ? (
                       <p>No new notification</p>
                     ) : (
-                      likeNotifications.map((notification) => {
+                      notifications.map((notification) => {
                         return (
                           <div
                             key={notification.userId}

@@ -1,7 +1,7 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import Feed from "@/components/Feed";
-import useGetAllPost from "@/hooks/useGetAllPost";
+import useGetAllPost from "@/hooks/useGetNewFeed";
 import useGetSuggestedUsers from "@/hooks/useGetSuggestedUsers";
 import RightSidebar from "@/components/RightSiderbar";
 const Home = () => {

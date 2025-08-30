@@ -18,8 +18,8 @@ const Post = ({ post }) => {
   const { user } = useSelector((store) => store.auth);
   const { posts } = useSelector((store) => store.post);
   const dispatch = useDispatch();
-  const [liked, setLiked] = useState(post.likes.includes(user?._id) || false);
-  const [postLike, setPostLike] = useState(post.likes.length);
+  const [liked, setLiked] = useState(post.isLiked || false);
+  const [postLike, setPostLike] = useState(post.likes);
   const [comment, setComment] = useState(post.comments);
   const changeEvenHandler = (e) => {
     const inputText = e.target.value;
@@ -29,40 +29,39 @@ const Post = ({ post }) => {
       setText("");
     }
   };
-  const likeOrDislikeHandler = async () => {
+  const likeButtonHandler = async () => {
     try {
-      const res = liked
-        ? await axios.delete(
-            `http://localhost:5000/api/v1/post/${post?._id}/dislike`,
-            { withCredentials: true }
-          )
-        : await axios.post(
-            `http://localhost:5000/api/v1/post/${post?._id}/like`,
-            null,
-            { withCredentials: true }
-          );
-      if (res.data.success) {
-        const updateLike = liked ? postLike - 1 : postLike + 1;
-        setPostLike(updateLike);
-        setLiked(!liked);
+      const res = await axios.post(
+        `http://localhost:5000/api/v1/post/${post._id}/like`,
+        {},
+        { withCredentials: true }
+      );
 
-        const updatePostData = posts.map((postItems) =>
-          postItems._id == post._id
+      if (res.data.success) {
+        if (res.data.message === "liked") {
+          setLiked(true);
+        } else if (res.data.message === "unliked") {
+          setLiked(false);
+        }
+        const updatedPost = res.data.post;
+        const updatedPostsData = posts.map((postItem) =>
+          postItem._id === post._id
             ? {
-                ...postItems,
-                likes: liked
-                  ? postItems.likes.filter((id) => id !== user._id)
-                  : [...postItems.likes, user._id],
+                ...postItem,
+                likes: updatedPost.likes,
+                comments: updatedPost.comments,
+                isLiked: liked,
               }
-            : postItems
+            : postItem
         );
-        dispatch(setPosts(updatePostData));
+        dispatch(setPosts(updatedPostsData));
         toast.success(res.data.message);
       }
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Something went wrong");
     }
   };
+
   const commentHandler = async () => {
     try {
       const res = await axios.post(
@@ -164,12 +163,12 @@ const Post = ({ post }) => {
           <div className="flex items-center gap-3">
             {liked ? (
               <FaHeart
-                onClick={likeOrDislikeHandler}
+                onClick={likeButtonHandler}
                 className="fill-[#ff3040]"
                 size={"22px"}
               />
             ) : (
-              <FaRegHeart onClick={likeOrDislikeHandler} size={"22px"} />
+              <FaRegHeart onClick={likeButtonHandler} size={"22px"} />
             )}
             <TbMessageCircle
               onClick={() => {
@@ -186,7 +185,9 @@ const Post = ({ post }) => {
           </div>
           <Bookmark className="cursor-pointer hover:text-gray-600" />
         </div>
-        <span className="font-medium mb-2">{postLike} likes</span>
+        {post.likes > 0 && (
+          <span className="font-medium mb-2">{post.likes} likes</span>
+        )}
         <p>
           <span className="font-medium mr-2">{post.author.username}</span>
           {post.caption}
@@ -198,7 +199,7 @@ const Post = ({ post }) => {
           }}
           className="cursor-pointer text-sm text-gray-400"
         >
-          View all {comment.length} comments
+          View all {posts.comments} comments
         </span>
         <CommentDialog open={open} setOpen={setOpen} />
         <div className="flex items-center justify-between">

@@ -3,14 +3,19 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 
-const useGetAllPost = () => {
+import React from "react";
+
+const useGetNewFeed = () => {
   const dispatch = useDispatch();
   useEffect(() => {
-    const fetchAllPost = async () => {
+    const fetchNewFeed = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/v1/post/all", {
-          withCredentials: true,
-        });
+        const res = await axios.get(
+          "http://localhost:5000/api/v1/post/newfeeds",
+          {
+            withCredentials: true,
+          }
+        );
         if (res.data.success) {
           console.log(res.data.posts);
           dispatch(setPosts(res.data.posts));
@@ -19,7 +24,8 @@ const useGetAllPost = () => {
         console.log(error);
       }
     };
-    fetchAllPost();
+    fetchNewFeed();
   }, []);
 };
-export default useGetAllPost;
+
+export default useGetNewFeed;

@@ -6,15 +6,30 @@ import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import Login from "./Login";
 import { Loader2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 const Signup = () => {
   const [input, setInput] = useState({
     username: "",
     name: "",
     email: "",
     password: "",
+    gender: null,
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const labelMap = {
+    male: "Male",
+    female: "Female",
+    other: "Other",
+  };
   const changeEventHandler = (e) => {
     setInput({ ...input, [e.target.name]: e.target.value });
   };
@@ -36,7 +51,13 @@ const Signup = () => {
       if (res.data.success) {
         navigate("/login");
         toast.success(res.data.message);
-        setInput({ username: "", name: "", email: "", password: "" });
+        setInput({
+          username: "",
+          name: "",
+          email: "",
+          password: "",
+          gender: null,
+        });
       }
     } catch (error) {
       console.log(error);
@@ -88,6 +109,35 @@ const Signup = () => {
               onChange={changeEventHandler}
               className="focus-visible:ring-transparent my-2"
             />
+          </div>
+          <div className="flex justify-between ">
+            <span className="font-medium">Gender</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  {input.gender ? labelMap[input.gender] : "Select gender"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup
+                  value={input.gender ?? ""}
+                  onValueChange={(val) =>
+                    setInput({ ...input, gender: val || null })
+                  }
+                >
+                  <DropdownMenuRadioItem value="male">
+                    Male
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="female">
+                    Female
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="other">
+                    Other
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div>
             <span className="font-medium">Password</span>

@@ -3,17 +3,17 @@ import { createSlice } from "@reduxjs/toolkit";
 const notificationSlice = createSlice({
   name: "notification",
   initialState: {
-    likeNotifications: [],
+    notifications: [],
   },
   reducers: {
-    setLikeNotification: (state, action) => {
-      state.likeNotifications.push(action.payload);
+    setNotification: (state, action) => {
+      state.notifications.push(action.payload);
     },
     reset: () => ({
-      likeNotifications: [],
+      notifications: [],
     }),
   },
 });
-export const { setLikeNotification, reset: resetNotification } =
+export const { setNotification, reset: resetNotification } =
   notificationSlice.actions;
 export default notificationSlice.reducer;

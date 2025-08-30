@@ -2,7 +2,11 @@ import Signup from "@/components/Signup";
 import Login from "@/components/Login";
 import MainLayout from "@/components/MainLayout";
 import Home from "@/components/Home";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  useLocation,
+} from "react-router-dom";
 import Profile from "./components/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EditProfile from "./components/EditProfile";
@@ -12,7 +16,11 @@ import useSocket from "./hooks/useSocket";
 import { useDispatch, useSelector } from "react-redux";
 import store from "./redux/store";
 import { useEffect } from "react";
-import { setSelectedUser } from "./redux/authSlice";
+import { resetAuth, setSelectedUser } from "./redux/authSlice";
+import { resetPosts } from "./redux/postSlice";
+import { resetSocket } from "./redux/socketSlice";
+import { resetChat } from "./redux/chatSlice";
+import { resetNotification } from "./redux/notificationSlice";
 const browserRouter = createBrowserRouter([
   {
     path: "/",
@@ -22,7 +30,7 @@ const browserRouter = createBrowserRouter([
         path: "/",
         element: (
           <ProtectedRoute>
-            <Home />,
+            <Home />
           </ProtectedRoute>
         ),
       },
@@ -61,11 +69,28 @@ function App() {
   const socket = useSocket();
   const { isAuthLoading, user } = useSelector((store) => store.auth);
   const dispatch = useDispatch();
+
   useEffect(() => {
-    if (location.pathname !== "/direct/inbox") {
+    if (location.pathname !== "/direct/inbox/") {
       dispatch(setSelectedUser(null));
     }
   }, [location.pathname, dispatch]);
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      dispatch(resetAuth());
+      dispatch(resetPosts());
+      dispatch(resetSocket());
+      dispatch(resetChat());
+      dispatch(resetNotification());
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [dispatch]);
+
   if (isAuthLoading) {
     return <div>Loading...</div>;
   }
