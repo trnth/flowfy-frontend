@@ -11,16 +11,16 @@ import Profile from "./components/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EditProfile from "./components/EditProfile";
 import ChatPage from "./components/ChatPage";
-import useAuthCheck from "./hooks/useAuthCheck";
 import useSocket from "./hooks/useSocket";
 import { useDispatch, useSelector } from "react-redux";
 import store from "./redux/store";
 import { useEffect } from "react";
-import { resetAuth, setSelectedUser } from "./redux/authSlice";
 import { resetPosts } from "./redux/postSlice";
 import { resetSocket } from "./redux/socketSlice";
 import { resetChat } from "./redux/chatSlice";
 import { resetNotification } from "./redux/notificationSlice";
+import useVerified from "./hooks/useVerified";
+import { setSelectedUser } from "./redux/userSlice";
 const browserRouter = createBrowserRouter([
   {
     path: "/",
@@ -65,9 +65,9 @@ const browserRouter = createBrowserRouter([
 ]);
 
 function App() {
-  useAuthCheck();
+  useVerified();
   const socket = useSocket();
-  const { isAuthLoading, user } = useSelector((store) => store.auth);
+  const { user, isVerified } = useSelector((store) => store.auth);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -90,10 +90,6 @@ function App() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [dispatch]);
-
-  if (isAuthLoading) {
-    return <div>Loading...</div>;
-  }
   return (
     <>
       <RouterProvider router={browserRouter} />

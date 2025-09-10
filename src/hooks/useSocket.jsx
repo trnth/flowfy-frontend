@@ -6,12 +6,12 @@ import { setSocketStatus } from "@/redux/socketSlice";
 import { setNotification } from "@/redux/notificationSlice";
 
 const useSocket = () => {
-  const { user, isAuthLoading } = useSelector((store) => store.auth);
+  const { user, isVerified } = useSelector((store) => store.auth);
   const dispatch = useDispatch();
   const socketRef = useRef(null);
 
   useEffect(() => {
-    if (!isAuthLoading && user?._id) {
+    if (isVerified && user?._id) {
       const socket = io("http://localhost:5000", {
         query: { userId: user._id },
         withCredentials: true,
@@ -39,7 +39,7 @@ const useSocket = () => {
         dispatch(setSocketStatus(false));
       };
     }
-  }, [isAuthLoading, user?._id, dispatch]);
+  }, [isVerified, user?._id, dispatch]);
 
   return socketRef.current;
 };

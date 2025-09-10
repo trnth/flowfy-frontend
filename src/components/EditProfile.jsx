@@ -14,7 +14,7 @@ import {
 import axios from "axios";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { setAuthUser } from "@/redux/authSlice";
+import { setAuth } from "@/redux/authSlice";
 const EditProfile = () => {
   const imageRef = useRef();
   const { user } = useSelector((store) => store.auth);
@@ -62,7 +62,7 @@ const EditProfile = () => {
           profilePicture: res.data.user?.profilePicture,
           gender: res.data.user?.gender,
         };
-        dispatch(setAuthUser(updateData));
+        dispatch(setAuth(updateData));
         navigate(`/profile/${user?._id}`);
         toast.success(res.data.message);
         setLoading(false);

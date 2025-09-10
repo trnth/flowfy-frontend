@@ -1,31 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import { Dialog, DialogContent } from "./ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Link } from "react-router-dom";
-import { MoreHorizontal, Heart, X } from "lucide-react";
+import { MoreHorizontal, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { useDispatch, useSelector } from "react-redux";
 import Comment from "./Comment";
 import { toast } from "sonner";
 import { setPosts, setSelectedPost } from "@/redux/postSlice";
 import axios from "axios";
+import { GrPrevious, GrNext } from "react-icons/gr";
+
 const CommentDialog = ({ open, setOpen }) => {
   const [text, setText] = useState("");
   const { selectedPost, posts } = useSelector((store) => store.post);
   const [comment, setComment] = useState([]);
   const dispatch = useDispatch();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [fade, setFade] = useState(false);
+
   useEffect(() => {
     if (selectedPost) {
       setComment(selectedPost.comments);
+      setCurrentImageIndex(0);
     }
   }, [selectedPost]);
+
   const changeEventHandler = (e) => {
     const inputText = e.target.value;
-    if (inputText.trim()) {
-      setText(inputText);
-    } else {
-      setText("");
-    }
+    setText(inputText.trim() ? inputText : "");
   };
 
   const sendMessageHandler = async () => {
@@ -34,9 +37,7 @@ const CommentDialog = ({ open, setOpen }) => {
         `http://localhost:5000/api/v1/post/${selectedPost._id}/comment`,
         { text },
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           withCredentials: true,
         }
       );
@@ -44,11 +45,8 @@ const CommentDialog = ({ open, setOpen }) => {
         const updateCommentData = [res.data.comment, ...comment];
         setComment(updateCommentData);
         const updatePostData = posts.map((postItems) =>
-          postItems._id == selectedPost._id
-            ? {
-                ...postItems,
-                comments: updateCommentData,
-              }
+          postItems._id === selectedPost._id
+            ? { ...postItems, comments: updateCommentData }
             : postItems
         );
         dispatch(setPosts(updatePostData));
@@ -59,40 +57,116 @@ const CommentDialog = ({ open, setOpen }) => {
         setText("");
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to post comment");
     }
+  };
+
+  const switchImage = (newIndex) => {
+    setFade(true);
+    setTimeout(() => {
+      setCurrentImageIndex(newIndex);
+      setFade(false);
+    }, 200);
+  };
+
+  const handlePrevImage = () => {
+    if (!selectedPost?.images) return;
+    const newIndex =
+      currentImageIndex === 0
+        ? selectedPost.images.length - 1
+        : currentImageIndex - 1;
+    switchImage(newIndex);
+  };
+
+  const handleNextImage = () => {
+    if (!selectedPost?.images) return;
+    const newIndex =
+      currentImageIndex === selectedPost.images.length - 1
+        ? 0
+        : currentImageIndex + 1;
+    switchImage(newIndex);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent
-        className="w-[90vw] max-w-[900px] min-w-[500px] h-[80vh] p-0 flex rounded-lg overflow-hidden sm:max-w-[900px] border-0"
-        style={{ maxWidth: "900px !important" }}
-      >
+      <DialogContent className="w-[90vw] max-w-[900px] min-w-[500px] h-[80vh] p-0 flex rounded-lg overflow-hidden sm:max-w-[900px] border-none">
         <div className="flex w-full h-full">
-          {/* Bên trái - ảnh bài post */}
-          <div className="flex-[0.6] h-full bg-black">
-            {selectedPost?.image ? (
-              <img
-                src={selectedPost.image}
-                alt="post_img"
-                className="w-full h-full object-contain"
-              />
+          {/* Left side - Post images */}
+          <div className="flex-[0.6] h-full bg-black relative flex items-center justify-center overflow-hidden">
+            {selectedPost?.images?.length > 0 ? (
+              <>
+                {/* Background blur */}
+                <img
+                  src={selectedPost.images[currentImageIndex]}
+                  alt="background blur"
+                  className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-40"
+                />
+
+                {/* Main image */}
+                <div className="relative z-10 flex items-center justify-center w-full h-full">
+                  <img
+                    src={selectedPost.images[currentImageIndex]}
+                    alt={`post image ${currentImageIndex}`}
+                    className={`max-w-full max-h-full object-contain transition-opacity duration-500 ease-in-out ${
+                      fade ? "opacity-0" : "opacity-100"
+                    }`}
+                  />
+                </div>
+
+                {/* Previous button */}
+                {selectedPost.images.length > 1 && (
+                  <button
+                    onClick={handlePrevImage}
+                    className="absolute left-2 z-20 bg-black/40 p-2 rounded-full hover:bg-black/70 transition-all duration-200"
+                    aria-label="Previous image"
+                  >
+                    <GrPrevious className="text-white text-2xl" />
+                  </button>
+                )}
+
+                {/* Next button */}
+                {selectedPost.images.length > 1 && (
+                  <button
+                    onClick={handleNextImage}
+                    className="absolute right-2 z-20 bg-black/40 p-2 rounded-full hover:bg-black/70 transition-all duration-200"
+                    aria-label="Next image"
+                  >
+                    <GrNext className="text-white text-2xl" />
+                  </button>
+                )}
+
+                {/* Dot indicators */}
+                {selectedPost.images.length > 1 && (
+                  <div className="absolute bottom 四 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                    {selectedPost.images.map((_, idx) => (
+                      <span
+                        key={idx}
+                        className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                          idx === currentImageIndex ? "bg-white" : "bg-white/40"
+                        }`}
+                      ></span>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-gray-500">
                 No image available
               </div>
             )}
           </div>
-
-          {/* Bên phải - phần comment */}
+          {/* Right side - Comments section */}
           <div className="flex-[0.4] h-full flex flex-col bg-white">
             {/* Header */}
             <div className="flex items-center justify-between p-3 border-b">
               <div className="flex gap-2 items-center">
                 <Link to={`/${selectedPost?.author?.username || ""}`}>
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src={selectedPost?.author?.profilePicture} />
+                    <AvatarImage
+                      src={selectedPost?.author?.profilePicture}
+                      alt="User avatar"
+                    />
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
                 </Link>
@@ -104,56 +178,47 @@ const CommentDialog = ({ open, setOpen }) => {
                 </Link>
               </div>
               <div className="flex items-center gap-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <MoreHorizontal className="cursor-pointer w-5 h-5" />
-                  </DialogTrigger>
-                  <DialogContent className="flex flex-col items-center text-sm p-4 rounded-t-lg sm:max-w-[400px] border-0">
-                    <div className="cursor-pointer w-full text-[#ED4956] font-bold py-2">
-                      Unfollow
-                    </div>
-                    <div className="cursor-pointer w-full py-2">
-                      Add to favorites
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <MoreHorizontal className="cursor-pointer w-5 h-5 hover:text-gray-600" />
                 <X
-                  className="cursor-pointer w-5 h-5"
+                  className="cursor-pointer w-5 h-5 hover:text-gray-600"
                   onClick={() => setOpen(false)}
+                  aria-label="Close dialog"
                 />
               </div>
             </div>
-            <hr />
+
             {/* Comment list */}
             <div className="flex-1 overflow-y-auto p-4 min-h-0">
-              {selectedPost?.comments?.length > 0 ? (
-                selectedPost.comments.map((comment) => (
-                  <Comment key={comment._id} comment={comment} />
-                ))
+              {comment?.length > 0 ? (
+                comment.map((cmt) => <Comment key={cmt._id} comment={cmt} />)
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
-                  Chưa có bình luận
+                  No comments yet
                 </div>
               )}
             </div>
-            {/* Input - cố định ở dưới đáy */}
+
+            {/* Input */}
             <div className="p-3 border-t">
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={text}
                   onChange={changeEventHandler}
-                  placeholder="Thêm bình luận..."
-                  className="w-full outline-none text-sm border-b border-gray-300 py-1 bg-transparent"
+                  placeholder="Add a comment..."
+                  className="w-full outline-none text-sm border-b border-gray-300 py-1 bg-transparent focus:border-blue-500 transition-colors"
+                  aria-label="Comment input"
                 />
                 <Button
                   disabled={!text.trim()}
                   onClick={sendMessageHandler}
-                  className={`text-sm ${
-                    text.trim() ? "text-[#0095F6]" : "text-gray-400"
+                  className={`text-sm font-medium ${
+                    text.trim()
+                      ? "text-blue-500 hover:text-blue-600"
+                      : "text-gray-400 cursor-not-allowed"
                   } bg-transparent hover:bg-transparent`}
                 >
-                  Đăng
+                  Post
                 </Button>
               </div>
             </div>
