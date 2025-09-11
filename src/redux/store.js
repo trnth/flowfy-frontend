@@ -1,7 +1,7 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
-import authSlide from "./authSlice.js";
+import authSlice from "./authSlice.js";
 import userSlice from "./userSlice.js";
-import postSlide from "./postSlice.js";
+import postSlice from "./postSlice.js";
 import socketSlice from "./socketSlice.js";
 import chatSlice from "./chatSlice.js";
 import notificationSlice from "./notificationSlice.js";
@@ -16,27 +16,24 @@ import {
   REGISTER,
 } from "redux-persist";
 import storage from "redux-persist/lib/storage";
-import { PersistGate } from "redux-persist/integration/react";
 
-const persistConfig = {
-  key: "root",
-  version: 1,
+const authPersistConfig = {
+  key: "auth",
   storage,
+  version: 1,
 };
 
 const rootReducer = combineReducers({
-  auth: authSlide,
+  auth: persistReducer(authPersistConfig, authSlice),
   user: userSlice,
-  post: postSlide,
+  post: postSlice,
   socketio: socketSlice,
   chat: chatSlice,
   notification: notificationSlice,
 });
 
-const persistedReducer = persistReducer(persistConfig, rootReducer);
-
 const store = configureStore({
-  reducer: persistedReducer,
+  reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
@@ -44,5 +41,6 @@ const store = configureStore({
       },
     }),
 });
-export default store;
+
 export const persistor = persistStore(store);
+export default store;

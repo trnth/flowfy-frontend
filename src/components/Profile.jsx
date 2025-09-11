@@ -10,50 +10,50 @@ import useUserProfile from "@/hooks/useUserProfile";
 import useBookmarks from "@/hooks/useBookmarks";
 import CommentDialog from "./CommentDialog";
 import { setSelectedPost } from "@/redux/postSlice";
+import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import useEditAvatarDialog from "@/hooks/useEditAvatarDialog";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
   const { id: userId } = useParams();
+  const isCurrentUser = useUserProfile(userId);
+  const authUser = useSelector((store) => store.auth.user);
+  const otherUser = useSelector((store) => store.user.userProfile);
 
-  // hooks
-  useUserProfile(userId);
-  const { fetchUserPosts, resetPosts } = useUserPosts(userId);
-  const { fetchBookmarks, resetBookmarks } = useBookmarks(userId);
+  const userProfile = isCurrentUser ? authUser : otherUser;
+  const { fetchUserPosts, resetPosts } = useUserPosts(userProfile?._id);
+  const { fetchBookmarks, resetBookmarks } = useBookmarks(userProfile?._id);
+  const { userPost, bookmarks } = useSelector((store) => store.user);
 
-  // redux
-  const posts = useSelector((state) => state.post.userPost);
-  const bookmarks = useSelector((state) => state.post.bookmarks);
-  const { userProfile } = useSelector((store) => store.user);
-
-  //
   const dispatch = useDispatch();
-  const [open, setOpen] = useState(false);
+  const [openComment, setOpenComment] = useState(false);
+  // hooks
+
+  // avatar hook
+  const {
+    FileInput,
+    triggerFileInput,
+    Dialog: AvatarDialog,
+  } = useEditAvatarDialog();
 
   useEffect(() => {
-    resetPosts();
-    resetBookmarks();
-    fetchUserPosts();
-    fetchBookmarks();
-  }, [userId]);
-
-  useEffect(() => {
-    if (activeTab === "posts" && posts.length === 0) {
+    if (activeTab === "posts") {
+      resetPosts();
       fetchUserPosts();
-    }
-    if (activeTab === "saved" && bookmarks.length === 0) {
+    } else if (activeTab === "saved") {
+      resetBookmarks();
       fetchBookmarks();
     }
-  }, [activeTab]);
+  }, userProfile?._id);
 
   if (!userProfile) {
     return <p className="text-center py-10">Đang tải ...</p>;
   }
 
-  const isLoggedInUserProfile = userProfile?.isCurrentUser;
   const isFollowing = userProfile?.isFollowing;
 
   const displayedPost =
-    activeTab === "posts" ? posts : activeTab === "saved" ? bookmarks : [];
+    activeTab === "posts" ? userPost : activeTab === "saved" ? bookmarks : [];
 
   return (
     <div className="flex max-w-4xl justify-center mx-auto pl-10">
@@ -61,10 +61,26 @@ const Profile = () => {
         <div className="grid grid-cols-2">
           {/* avatar */}
           <section className="flex items-center justify-center">
-            <Avatar className="h-32 w-32">
-              <AvatarImage src={userProfile?.profilePicture} />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
+            {isCurrentUser ? (
+              <>
+                <Avatar
+                  className="h-32 w-32 cursor-pointer"
+                  onClick={triggerFileInput}
+                >
+                  <AvatarImage src={userProfile?.profilePicture} />
+                  <AvatarFallback>CN</AvatarFallback>
+                </Avatar>
+                {FileInput}
+                {AvatarDialog}
+              </>
+            ) : (
+              <Link to={`/profile/${userProfile?.username}`}>
+                <Avatar className="h-32 w-32">
+                  <AvatarImage src={userProfile?.profilePicture} />
+                  <AvatarFallback>CN</AvatarFallback>
+                </Avatar>
+              </Link>
+            )}
           </section>
 
           {/* profile info */}
@@ -72,8 +88,7 @@ const Profile = () => {
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-2">
                 <span>{userProfile?.username}</span>
-
-                {isLoggedInUserProfile ? (
+                {isCurrentUser ? (
                   <>
                     <Link to="/accounts/edit">
                       <Button
@@ -111,7 +126,8 @@ const Profile = () => {
 
               <div className="flex items-center gap-4">
                 <p>
-                  <span className="font-semibold">{posts.length}</span> posts
+                  <span className="font-semibold">{userProfile?.posts}</span>{" "}
+                  posts
                 </p>
                 <p>
                   <span className="font-semibold">
@@ -167,6 +183,7 @@ const Profile = () => {
               Reels
             </span>
           </div>
+
           {/* posts / bookmarks grid */}
           <div className="grid grid-cols-3 gap-1">
             {displayedPost?.map((post) => (
@@ -175,7 +192,7 @@ const Profile = () => {
                 className="relative group cursor-pointer"
                 onClick={() => {
                   dispatch(setSelectedPost(post));
-                  setOpen(true);
+                  setOpenComment(true);
                 }}
               >
                 <img
@@ -185,20 +202,21 @@ const Profile = () => {
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black opacity-0 group-hover:opacity-50 group-hover:mt-1 transition-opacity">
                   <div className="flex items-center text-white space-x-4">
-                    <Button className="flex items-center gap-2 hover:text-gray-300">
+                    <div className="flex items-center gap-2">
                       <Heart />
                       <span>{post?.likes}</span>
-                    </Button>
-                    <Button className="flex items-center gap-2 hover:text-gray-300">
+                    </div>
+                    <div className="flex items-center gap-2">
                       <MessageCircle />
                       <span>{post?.comments}</span>
-                    </Button>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
-          <CommentDialog open={open} setOpen={setOpen} />
+
+          <CommentDialog open={openComment} setOpen={setOpenComment} />
         </div>
       </div>
     </div>

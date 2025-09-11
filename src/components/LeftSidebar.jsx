@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { setAuth } from "@/redux/authSlice";
+import { resetAuth, setAuth } from "@/redux/authSlice";
 import { resetPosts } from "@/redux/postSlice";
 import { resetSocket } from "@/redux/socketSlice";
 import { resetChat } from "@/redux/chatSlice";
@@ -63,7 +63,7 @@ const LeftSidebar = () => {
       setOpenSearch(false);
       setOpenNotifications(false);
     } else if (textType === "Profile") {
-      navigate(`/profile/${user._id}`);
+      navigate(`/profile/${user.username}`);
       setOpen(false);
       setOpenSearch(false);
       setOpenNotifications(false);

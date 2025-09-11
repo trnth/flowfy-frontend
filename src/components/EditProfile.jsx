@@ -15,6 +15,20 @@ import axios from "axios";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { setAuth } from "@/redux/authSlice";
+
+export const handlerDeleteImage = async () => {
+  const dispatch = useDispatch();
+  try {
+    const res = await axios.delete(
+      "http://localhost:5000/profile/edit/profilePicture/delete",
+      { withCredentials: true }
+    );
+    if (res.data.success) {
+      dispatch(setAuth(res.data.user));
+    }
+  } catch (error) {}
+};
+
 const EditProfile = () => {
   const imageRef = useRef();
   const { user } = useSelector((store) => store.auth);

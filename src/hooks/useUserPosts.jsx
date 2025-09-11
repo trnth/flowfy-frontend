@@ -15,21 +15,15 @@ const useUserPosts = (userId, limit = 5) => {
     setLoading(true);
     try {
       const params = { limit };
-      if (nextCursor) {
-        params.lastCreatedAt = nextCursor;
-      }
+      if (nextCursor) params.lastCreatedAt = nextCursor;
 
       const res = await axios.get(
         `http://localhost:5000/api/v1/user/${userId}/post`,
-        {
-          params,
-          withCredentials: true,
-        }
+        { params, withCredentials: true }
       );
 
       if (res.data.success) {
         const newPosts = res.data.posts;
-
         if (newPosts.length === 0) {
           setHasMore(false);
         } else {
@@ -48,22 +42,13 @@ const useUserPosts = (userId, limit = 5) => {
     }
   };
 
-  // reset lại khi đổi user hoặc logout
   const resetPosts = () => {
     setNextCursor(null);
     setHasMore(true);
     dispatch(setUserPost([]));
   };
 
-  // khi userId đổi thì reset và fetch lại posts
-  useEffect(() => {
-    if (userId) {
-      resetPosts();
-      fetchUserPosts();
-    }
-  }, [userId]);
-
-  return { fetchUserPosts, hasMore, loading, resetPosts };
+  return { fetchUserPosts, resetPosts, hasMore, loading };
 };
 
 export default useUserPosts;
