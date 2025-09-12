@@ -6,14 +6,23 @@ import {
   Heart,
   PlusSquare,
   LogOut,
+  Settings,
+  Clock,
+  MoreHorizontal,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { resetAuth, setAuth } from "@/redux/authSlice";
+import { resetAuth } from "@/redux/authSlice";
 import { resetPosts } from "@/redux/postSlice";
 import { resetSocket } from "@/redux/socketSlice";
 import { resetChat } from "@/redux/chatSlice";
@@ -26,6 +35,7 @@ const LeftSidebar = () => {
   const [open, setOpen] = useState(false);
   const [openSearch, setOpenSearch] = useState(false);
   const [openNotifications, setOpenNotifications] = useState(false);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((store) => store.auth);
@@ -34,6 +44,7 @@ const LeftSidebar = () => {
   const { notifications } = useSelector((store) => store.notification);
 
   if (!user) return null;
+
   const logoutHandler = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/v1/auth/logout", {
@@ -45,7 +56,6 @@ const LeftSidebar = () => {
       dispatch(resetChat());
       dispatch(resetNotification());
       if (res.data.success) {
-        dispatch(setAuthUser(null));
         navigate("/login");
         toast.success(res.data.message);
       }
@@ -55,7 +65,6 @@ const LeftSidebar = () => {
   };
 
   const sidebarHandler = (textType) => {
-    console.log({ textType, open, openSearch, openNotifications });
     if (textType === "LogOut") {
       logoutHandler();
     } else if (textType === "Create") {
@@ -88,7 +97,7 @@ const LeftSidebar = () => {
     }
   };
 
-  const sidebarItems = [
+  const sidebarItemsTop = [
     { icon: <Home />, text: "Home" },
     { icon: <Search />, text: "Search" },
     { icon: <TrendingUp />, text: "Explore" },
@@ -104,7 +113,6 @@ const LeftSidebar = () => {
       ),
       text: "Profile",
     },
-    { icon: <LogOut />, text: "LogOut" },
   ];
 
   return (
@@ -116,49 +124,89 @@ const LeftSidebar = () => {
             : "w-[60px] md:w-[80px] lg:w-[16%]"
         }`}
       >
-        <div className="flex flex-col">
-          <h1
-            className={`text-center font-bold text-2xl my-4 lg:pl-3 px-3 transition-opacity duration-300 ease-in-out`}
-          >
-            <span
-              className={`${
-                isInboxPage || openSearch || openNotifications
-                  ? "block"
-                  : "block lg:hidden"
-              }`}
-            >
-              F
-            </span>
-            <span
-              className={`${
-                isInboxPage || openSearch || openNotifications
-                  ? "opacity-0 absolute"
-                  : "hidden lg:inline"
-              }`}
-            >
-              Flowfy
-            </span>
-          </h1>
+        <div className="flex flex-col h-full justify-between relative">
+          {/* Nhóm trên */}
+          <div>
+            <h1 className="text-center font-bold text-2xl my-4 lg:pl-3 px-3">
+              <span
+                className={`${
+                  isInboxPage || openSearch || openNotifications
+                    ? "block"
+                    : "block lg:hidden"
+                }`}
+              >
+                F
+              </span>
+              <span
+                className={`${
+                  isInboxPage || openSearch || openNotifications
+                    ? "opacity-0 absolute"
+                    : "hidden lg:inline"
+                }`}
+              >
+                Flowfy
+              </span>
+            </h1>
 
-          {sidebarItems.map((item, index) => (
-            <div
-              onClick={() => sidebarHandler(item.text)}
-              key={index}
-              className="flex items-center gap-4 relative hover:bg-gray-100 cursor-pointer rounded-lg p-3"
-            >
-              {item.icon}
-              {!(isInboxPage || openSearch || openNotifications) && (
-                <span className="hidden lg:inline">{item.text}</span>
-              )}
-              {item.text === "Notifications" && notifications?.length > 0 && (
-                <div className="rounded-full h-5 w-5 bg-red-600 text-white text-xs flex items-center justify-center absolute bottom-6 left-6">
-                  {notifications.length}
+            {sidebarItemsTop.map((item, index) => (
+              <div
+                onClick={() => sidebarHandler(item.text)}
+                key={index}
+                className="flex items-center gap-4 relative hover:bg-gray-100 cursor-pointer rounded-lg p-3"
+              >
+                {item.icon}
+                {!(isInboxPage || openSearch || openNotifications) && (
+                  <span className="hidden lg:inline">{item.text}</span>
+                )}
+                {item.text === "Notifications" && notifications?.length > 0 && (
+                  <div className="rounded-full h-5 w-5 bg-red-600 text-white text-xs flex items-center justify-center absolute bottom-6 left-6">
+                    {notifications.length}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Nút More ở dưới */}
+          <div className="mb-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-4 hover:bg-gray-100 cursor-pointer rounded-lg p-3">
+                  <MoreHorizontal />
+                  {!(isInboxPage || openSearch || openNotifications) && (
+                    <span className="hidden lg:inline">More</span>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                side="top" // xổ lên
+                align="start"
+                className="w-48 rounded-xl"
+              >
+                <DropdownMenuItem
+                  onClick={() => navigate("/accounts/edit")}
+                  className="flex items-center gap-2"
+                >
+                  <Settings size={20} /> Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => toast.info("View Activity")}
+                  className="flex items-center gap-2"
+                >
+                  <Clock size={20} /> Activity
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={logoutHandler}
+                  className="flex items-center gap-2 text-red-500"
+                >
+                  <LogOut size={20} /> Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
+
       <CreatePost open={open} setOpen={setOpen} />
       <SearchPage open={openSearch} setOpen={setOpenSearch} />
       <NotificationPage

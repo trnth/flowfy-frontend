@@ -12,29 +12,26 @@ import CommentDialog from "./CommentDialog";
 import { setSelectedPost } from "@/redux/postSlice";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import useEditAvatarDialog from "@/hooks/useEditAvatarDialog";
-
+import { TfiLayoutGrid3Alt } from "react-icons/tfi";
+import { FaRegBookmark } from "react-icons/fa";
+import AvatarMenu from "./AvatarMenu";
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
   const { id: userId } = useParams();
-  const isCurrentUser = useUserProfile(userId);
+  const { isCurrentUser } = useUserProfile(userId);
+
   const authUser = useSelector((store) => store.auth.user);
   const otherUser = useSelector((store) => store.user.userProfile);
 
   const userProfile = isCurrentUser ? authUser : otherUser;
+
   const { fetchUserPosts, resetPosts } = useUserPosts(userProfile?._id);
   const { fetchBookmarks, resetBookmarks } = useBookmarks(userProfile?._id);
-  const { userPost, bookmarks } = useSelector((store) => store.user);
+  const { userPost, bookmarks } = useSelector((store) => store.post);
 
   const dispatch = useDispatch();
   const [openComment, setOpenComment] = useState(false);
   // hooks
-
-  // avatar hook
-  const {
-    FileInput,
-    triggerFileInput,
-    Dialog: AvatarDialog,
-  } = useEditAvatarDialog();
 
   useEffect(() => {
     if (activeTab === "posts") {
@@ -44,7 +41,7 @@ const Profile = () => {
       resetBookmarks();
       fetchBookmarks();
     }
-  }, userProfile?._id);
+  }, [userProfile?._id]);
 
   if (!userProfile) {
     return <p className="text-center py-10">Đang tải ...</p>;
@@ -55,6 +52,8 @@ const Profile = () => {
   const displayedPost =
     activeTab === "posts" ? userPost : activeTab === "saved" ? bookmarks : [];
 
+  const followHandler = async () => {};
+
   return (
     <div className="flex max-w-4xl justify-center mx-auto pl-10">
       <div className="flex flex-col gap-20 p-8">
@@ -63,15 +62,12 @@ const Profile = () => {
           <section className="flex items-center justify-center">
             {isCurrentUser ? (
               <>
-                <Avatar
-                  className="h-32 w-32 cursor-pointer"
-                  onClick={triggerFileInput}
-                >
-                  <AvatarImage src={userProfile?.profilePicture} />
-                  <AvatarFallback>CN</AvatarFallback>
-                </Avatar>
-                {FileInput}
-                {AvatarDialog}
+                <AvatarMenu>
+                  <Avatar className="h-32 w-32 cursor-pointer">
+                    <AvatarImage src={userProfile?.profilePicture} />
+                    <AvatarFallback>CN</AvatarFallback>
+                  </Avatar>
+                </AvatarMenu>
               </>
             ) : (
               <Link to={`/profile/${userProfile?.username}`}>
@@ -110,6 +106,7 @@ const Profile = () => {
                     <Button
                       variant="secondary"
                       className="hover:bg-gray-200 h-8"
+                      onClick={unfollowHandler}
                     >
                       Unfollow
                     </Button>
@@ -118,7 +115,10 @@ const Profile = () => {
                     </Button>
                   </>
                 ) : (
-                  <Button className="bg-[#0095F6] hover:bg-[#3192d2] h-8">
+                  <Button
+                    className="bg-[#0095F6] hover:bg-[#3192d2] h-8"
+                    onClick={followHandler}
+                  >
                     Follow
                   </Button>
                 )}
@@ -156,64 +156,67 @@ const Profile = () => {
         </div>
 
         {/* tabs */}
-        <div className="border-t border-t-gray-200">
-          <div className="flex items-center justify-center gap-10 text-sm">
-            <span
-              className={`py-3 cursor-pointer ${
-                activeTab === "posts" ? "font-bold" : ""
-              }`}
+        <div>
+          <div className="flex items-center justify-center gap-40 text-sm">
+            <div
+              className={`flex  cursor-pointer px-4  pb-1
+    ${
+      activeTab === "posts"
+        ? "text-black border-b-2 border-black"
+        : "text-gray-400 "
+    }`}
               onClick={() => setActiveTab("posts")}
             >
-              POSTS
-            </span>
-            <span
-              className={`py-3 cursor-pointer ${
-                activeTab === "saved" ? "font-bold" : ""
-              }`}
-              onClick={() => setActiveTab("saved")}
-            >
-              SAVED
-            </span>
-            <span
-              className={`py-3 cursor-pointer ${
-                activeTab === "reels" ? "font-bold" : ""
-              }`}
-              onClick={() => setActiveTab("reels")}
-            >
-              Reels
-            </span>
+              <TfiLayoutGrid3Alt size={22} />
+            </div>
+
+            {isCurrentUser && (
+              <div
+                className={`flex cursor-pointer px-4 pb-1
+        ${
+          activeTab === "saved"
+            ? "text-black border-b-2 border-black"
+            : "text-gray-400"
+        }`}
+                onClick={() => setActiveTab("saved")}
+              >
+                <FaRegBookmark size={22} />
+              </div>
+            )}
           </div>
 
           {/* posts / bookmarks grid */}
-          <div className="grid grid-cols-3 gap-1">
-            {displayedPost?.map((post) => (
-              <div
-                key={post?._id}
-                className="relative group cursor-pointer"
-                onClick={() => {
-                  dispatch(setSelectedPost(post));
-                  setOpenComment(true);
-                }}
-              >
-                <img
-                  src={post.images[0]}
-                  alt="image"
-                  className="rounded-sm mt-1 w-full aspect-square object-cover"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black opacity-0 group-hover:opacity-50 group-hover:mt-1 transition-opacity">
-                  <div className="flex items-center text-white space-x-4">
-                    <div className="flex items-center gap-2">
-                      <Heart />
-                      <span>{post?.likes}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MessageCircle />
-                      <span>{post?.comments}</span>
+          <div className="border-t border-t-gray-200">
+            <div className="grid grid-cols-3 gap-1">
+              {displayedPost?.map((post) => (
+                <div
+                  key={post?._id}
+                  className="relative group cursor-pointer"
+                  onClick={() => {
+                    dispatch(setSelectedPost(post));
+                    setOpenComment(true);
+                  }}
+                >
+                  <img
+                    src={post.images[0]}
+                    alt="image"
+                    className="rounded-sm mt-1 w-full aspect-square object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black opacity-0 group-hover:opacity-50 group-hover:mt-1 transition-opacity">
+                    <div className="flex items-center text-white space-x-4">
+                      <div className="flex items-center gap-2">
+                        <Heart />
+                        <span>{post?.likes}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MessageCircle />
+                        <span>{post?.comments}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           <CommentDialog open={openComment} setOpen={setOpenComment} />

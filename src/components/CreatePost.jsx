@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import { setPosts } from "@/redux/postSlice";
+import { setUserPost } from "@/redux/postSlice";
 
 const CreatePost = ({ open, setOpen }) => {
   const imgRef = useRef();
@@ -46,7 +46,7 @@ const CreatePost = ({ open, setOpen }) => {
         }
       );
       if (res.data.success) {
-        dispatch(setPosts([res.data.post, ...posts]));
+        dispatch(setUserPost([res.data.post, ...posts]));
         toast.success(res.data.message);
         setCaption("");
         setFiles([]);

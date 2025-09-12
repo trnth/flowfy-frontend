@@ -1,4 +1,4 @@
-import { addUserPost, setUserPost } from "@/redux/userSlice";
+import { addUserPost, setUserPost } from "@/redux/postSlice";
 import axios from "axios";
 import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";

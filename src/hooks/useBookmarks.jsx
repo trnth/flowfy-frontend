@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import axios from "axios";
-import { addBookmarks, setBookmarks } from "@/redux/userSlice";
+import { addBookmarks, setBookmarks } from "@/redux/postSlice";
 
 const useBookmarks = (limit = 10) => {
   const dispatch = useDispatch();
