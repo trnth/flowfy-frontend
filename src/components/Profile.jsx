@@ -4,17 +4,19 @@ import { Link, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { AtSign, Heart, MessageCircle } from "lucide-react";
+import { AtSign, Heart, MessageCircle, Loader2 } from "lucide-react";
 import useUserPosts from "@/hooks/useUserPosts";
 import useUserProfile from "@/hooks/useUserProfile";
 import useBookmarks from "@/hooks/useBookmarks";
 import CommentDialog from "./CommentDialog";
 import { setSelectedPost } from "@/redux/postSlice";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
-import useEditAvatarDialog from "@/hooks/useEditAvatarDialog";
 import { TfiLayoutGrid3Alt } from "react-icons/tfi";
 import { FaRegBookmark } from "react-icons/fa";
 import AvatarMenu from "./AvatarMenu";
+import axios from "axios";
+import { toast } from "sonner";
+import { updateUserProfile } from "@/redux/userSlice";
+
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
   const { id: userId } = useParams();
@@ -22,7 +24,6 @@ const Profile = () => {
 
   const authUser = useSelector((store) => store.auth.user);
   const otherUser = useSelector((store) => store.user.userProfile);
-
   const userProfile = isCurrentUser ? authUser : otherUser;
 
   const { fetchUserPosts, resetPosts } = useUserPosts(userProfile?._id);
@@ -31,9 +32,11 @@ const Profile = () => {
 
   const dispatch = useDispatch();
   const [openComment, setOpenComment] = useState(false);
-  // hooks
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
+    if (!userProfile?._id) return;
+
     if (activeTab === "posts") {
       resetPosts();
       fetchUserPosts();
@@ -47,12 +50,107 @@ const Profile = () => {
     return <p className="text-center py-10">Đang tải ...</p>;
   }
 
-  const isFollowing = userProfile?.isFollowing;
-
   const displayedPost =
     activeTab === "posts" ? userPost : activeTab === "saved" ? bookmarks : [];
 
-  const followHandler = async () => {};
+  const followHandler = async () => {
+    setActionLoading(true);
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/v1/user/${userProfile._id}/follow`,
+        {},
+        { withCredentials: true }
+      );
+      if (res.data.success && res.data.data) {
+        dispatch(
+          updateUserProfile({
+            ...userProfile,
+            followers: res.data.data.followers,
+            followings: res.data.data.followings,
+            isFollowing: true,
+            isAccepted: res.data.data.isAccepted,
+          })
+        );
+        toast.success(res.data.message);
+      } else {
+        toast.error("Follow action failed: Invalid response");
+      }
+    } catch (error) {
+      console.error(
+        "Error in followHandler:",
+        error.response?.data?.message || error.message
+      );
+      toast.error(error.response?.data?.message || "Follow action failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const unfollowHandler = async () => {
+    setActionLoading(true);
+    try {
+      const res = await axios.delete(
+        `http://localhost:5000/api/v1/user/${userProfile._id}/unfollow`,
+        { withCredentials: true }
+      );
+      if (res.data.success && res.data.data) {
+        dispatch(
+          updateUserProfile({
+            ...userProfile,
+            followers: res.data.data.followers,
+            followings: res.data.data.followings,
+            isFollowing: false,
+            isAccepted: false,
+          })
+        );
+        toast.success(res.data.message);
+      } else {
+        toast.error("Unfollow action failed: Invalid response");
+      }
+    } catch (error) {
+      console.error(
+        "Error in unfollowHandler:",
+        error.response?.data?.message || error.message
+      );
+      toast.error(error.response?.data?.message || "Unfollow action failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const cancelRequestHandler = async () => {
+    setActionLoading(true);
+    try {
+      const res = await axios.delete(
+        `http://localhost:5000/api/v1/user/follow/${userProfile._id}/cancel`,
+        { withCredentials: true }
+      );
+      if (res.data.success) {
+        dispatch(
+          updateUserProfile({
+            ...userProfile,
+            isFollowing: false,
+            isAccepted: false,
+          })
+        );
+        toast.success(res.data.message);
+      } else {
+        toast.error("Cancel request failed: Invalid response");
+      }
+    } catch (error) {
+      console.error(
+        "Error in cancelRequestHandler:",
+        error.response?.data?.message || error.message
+      );
+      toast.error(error.response?.data?.message || "Cancel request failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openConversationHandler = async () => {
+    // Placeholder
+  };
 
   return (
     <div className="flex max-w-4xl justify-center mx-auto pl-10">
@@ -61,14 +159,12 @@ const Profile = () => {
           {/* avatar */}
           <section className="flex items-center justify-center">
             {isCurrentUser ? (
-              <>
-                <AvatarMenu>
-                  <Avatar className="h-32 w-32 cursor-pointer">
-                    <AvatarImage src={userProfile?.profilePicture} />
-                    <AvatarFallback>CN</AvatarFallback>
-                  </Avatar>
-                </AvatarMenu>
-              </>
+              <AvatarMenu>
+                <Avatar className="h-32 w-32 cursor-pointer">
+                  <AvatarImage src={userProfile?.profilePicture} />
+                  <AvatarFallback>CN</AvatarFallback>
+                </Avatar>
+              </AvatarMenu>
             ) : (
               <Link to={`/profile/${userProfile?.username}`}>
                 <Avatar className="h-32 w-32">
@@ -101,25 +197,51 @@ const Profile = () => {
                       View archive
                     </Button>
                   </>
-                ) : isFollowing ? (
+                ) : userProfile?.isFollowing && userProfile?.isAccepted ? (
                   <>
                     <Button
                       variant="secondary"
-                      className="hover:bg-gray-200 h-8"
+                      className="hover:bg-gray-200 h-8 flex items-center justify-center gap-1"
                       onClick={unfollowHandler}
+                      disabled={actionLoading}
                     >
-                      Unfollow
+                      {actionLoading ? (
+                        <Loader2 className="animate-spin h-4 w-4" />
+                      ) : (
+                        "Unfollow"
+                      )}
                     </Button>
-                    <Button className="bg-[#0095F6] hover:bg-[#3192d2] h-8">
+                    <Button
+                      className="bg-[#0095F6] hover:bg-[#3192d2] h-8"
+                      onClick={openConversationHandler}
+                    >
                       Message
                     </Button>
                   </>
+                ) : userProfile?.isFollowing ? (
+                  <Button
+                    variant="secondary"
+                    className="hover:bg-gray-200 h-8 flex items-center justify-center gap-1"
+                    onClick={cancelRequestHandler}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? (
+                      <Loader2 className="animate-spin h-4 w-4" />
+                    ) : (
+                      "Pending Accept"
+                    )}
+                  </Button>
                 ) : (
                   <Button
-                    className="bg-[#0095F6] hover:bg-[#3192d2] h-8"
+                    className="bg-[#0095F6] hover:bg-[#3192d2] h-8 flex items-center justify-center gap-1"
                     onClick={followHandler}
+                    disabled={actionLoading}
                   >
-                    Follow
+                    {actionLoading ? (
+                      <Loader2 className="animate-spin h-4 w-4" />
+                    ) : (
+                      "Follow"
+                    )}
                   </Button>
                 )}
               </div>
@@ -137,7 +259,7 @@ const Profile = () => {
                 </p>
                 <p>
                   <span className="font-semibold">
-                    {userProfile?.following}
+                    {userProfile?.followings}
                   </span>{" "}
                   following
                 </p>
@@ -159,12 +281,11 @@ const Profile = () => {
         <div>
           <div className="flex items-center justify-center gap-40 text-sm">
             <div
-              className={`flex  cursor-pointer px-4  pb-1
-    ${
-      activeTab === "posts"
-        ? "text-black border-b-2 border-black"
-        : "text-gray-400 "
-    }`}
+              className={`flex cursor-pointer px-4 pb-1 ${
+                activeTab === "posts"
+                  ? "text-black border-b-2 border-black"
+                  : "text-gray-400"
+              }`}
               onClick={() => setActiveTab("posts")}
             >
               <TfiLayoutGrid3Alt size={22} />
@@ -172,12 +293,11 @@ const Profile = () => {
 
             {isCurrentUser && (
               <div
-                className={`flex cursor-pointer px-4 pb-1
-        ${
-          activeTab === "saved"
-            ? "text-black border-b-2 border-black"
-            : "text-gray-400"
-        }`}
+                className={`flex cursor-pointer px-4 pb-1 ${
+                  activeTab === "saved"
+                    ? "text-black border-b-2 border-black"
+                    : "text-gray-400"
+                }`}
                 onClick={() => setActiveTab("saved")}
               >
                 <FaRegBookmark size={22} />

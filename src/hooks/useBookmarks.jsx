@@ -37,6 +37,9 @@ const useBookmarks = (limit = 10) => {
             dispatch(addBookmarks(newBookmarks));
           }
           setNextCursor(res.data.nextCursor);
+          if (newBookmarks.length < limit) {
+            setHasMore(false);
+          }
         }
       }
     } catch (err) {

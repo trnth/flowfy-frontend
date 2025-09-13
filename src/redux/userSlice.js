@@ -14,6 +14,12 @@ const userSlice = createSlice({
     setUserProfile: (state, action) => {
       state.userProfile = action.payload;
     },
+    updateUserProfile: (state, action) => {
+      state.userProfile = {
+        ...state.userProfile,
+        ...action.payload,
+      };
+    },
     setSelectedUser: (state, action) => {
       state.selectedUser = action.payload;
     },
@@ -30,6 +36,6 @@ export const {
   setUserProfile,
   setSelectedUser,
   reset: resetUser,
-  
+  updateUserProfile,
 } = userSlice.actions;
 export default userSlice.reducer;

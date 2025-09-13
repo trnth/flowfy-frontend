@@ -21,6 +21,7 @@ import { resetChat } from "./redux/chatSlice";
 import { resetNotification } from "./redux/notificationSlice";
 import useVerified from "./hooks/useVerified";
 import { setSelectedUser } from "./redux/userSlice";
+import Setting from "./components/Setting";
 const browserRouter = createBrowserRouter([
   {
     path: "/",
@@ -46,7 +47,7 @@ const browserRouter = createBrowserRouter([
         path: "/accounts/edit",
         element: (
           <ProtectedRoute>
-            <EditProfile />
+            <Setting />
           </ProtectedRoute>
         ),
       },
