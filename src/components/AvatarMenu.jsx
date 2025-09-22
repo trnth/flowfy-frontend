@@ -5,8 +5,9 @@ import axios from "axios";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Ghost, User } from "lucide-react";
-import { setAuth } from "@/redux/authSlice";
 import { useDispatch } from "react-redux";
+import { setUserProfile } from "@/redux/userSlice";
+import { setProfile } from "@/redux/authSlice";
 
 export default function AvatarMenu({ children }) {
   const {
@@ -23,7 +24,8 @@ export default function AvatarMenu({ children }) {
         { withCredentials: true }
       );
       if (res.data.success) {
-        dispatch(setAuth(res.data.user));
+        dispatch(setUserProfile(res.data.user));
+        dispatch(setProfile(res.data.user));
         toast.success("Đã gỡ avatar");
       } else toast.error("Gỡ avatar thất bại");
     } catch (err) {

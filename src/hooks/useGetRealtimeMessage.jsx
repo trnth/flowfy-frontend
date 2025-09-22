@@ -7,7 +7,6 @@ import { addMessage, setMessages } from "@/redux/chatSlice";
 const useGetRealtimeMessage = () => {
   const dispatch = useDispatch();
   const socket = useSocket();
-  const { messages } = useSelector((store) => store.chat);
   useEffect(() => {
     if (!socket) return;
 

@@ -3,8 +3,6 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 
-import React from "react";
-
 const useGetNewFeed = () => {
   const dispatch = useDispatch();
   useEffect(() => {

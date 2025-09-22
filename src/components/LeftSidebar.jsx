@@ -23,7 +23,7 @@ import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { resetAuth } from "@/redux/authSlice";
-import { resetPosts } from "@/redux/postSlice";
+import { resetPost } from "@/redux/postSlice";
 import { resetSocket } from "@/redux/socketSlice";
 import { resetChat } from "@/redux/chatSlice";
 import CreatePost from "./CreatePost";
@@ -38,12 +38,12 @@ const LeftSidebar = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((store) => store.auth);
+  const { profile } = useSelector((store) => store.auth);
   const location = useLocation();
   const isInboxPage = location.pathname.startsWith("/direct/inbox");
   const { notifications } = useSelector((store) => store.notification);
 
-  if (!user) return null;
+  if (!profile) return null;
 
   const logoutHandler = async () => {
     try {
@@ -51,7 +51,7 @@ const LeftSidebar = () => {
         withCredentials: true,
       });
       dispatch(resetAuth());
-      dispatch(resetPosts());
+      dispatch(resetPost());
       dispatch(resetSocket());
       dispatch(resetChat());
       dispatch(resetNotification());
@@ -72,7 +72,7 @@ const LeftSidebar = () => {
       setOpenSearch(false);
       setOpenNotifications(false);
     } else if (textType === "Profile") {
-      navigate(`/profile/${user.username}`);
+      navigate(`/profile/${profile?.username}`);
       setOpen(false);
       setOpenSearch(false);
       setOpenNotifications(false);
@@ -107,7 +107,7 @@ const LeftSidebar = () => {
     {
       icon: (
         <Avatar className="w-6 h-6">
-          <AvatarImage src={user?.profilePicture} alt="@shadcn" />
+          <AvatarImage src={profile?.profilePicture} alt="@shadcn" />
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
       ),

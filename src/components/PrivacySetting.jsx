@@ -10,13 +10,13 @@ import { Button } from "./ui/button";
 import axios from "axios";
 import { toast } from "sonner";
 import { useSelector, useDispatch } from "react-redux";
-import { setAuth } from "@/redux/authSlice";
+import { setProfile } from "@/redux/authSlice";
 
 const PrivacySetting = () => {
-  const { user } = useSelector((store) => store.auth);
+  const { profile } = useSelector((store) => store.auth);
   const dispatch = useDispatch();
 
-  const [privacy, setPrivacy] = useState(user?.privacy || "public");
+  const [privacy, setPrivacy] = useState(profile?.privacy);
   const [loading, setLoading] = useState(false);
 
   const isDirty = privacy !== user?.privacy;
@@ -33,7 +33,7 @@ const PrivacySetting = () => {
         }
       );
       if (res.data.success) {
-        dispatch(setAuth(res.data.user));
+        dispatch(setProfile(res.data.user));
         toast.success(res.data.message || "Privacy updated");
       }
     } catch (err) {

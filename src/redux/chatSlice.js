@@ -2,12 +2,19 @@ import { createSlice } from "@reduxjs/toolkit";
 const chatSlice = createSlice({
   name: "chat",
   initialState: {
-    onlineUsers: [],
+    conversations: [],
     messages: [],
+    selectedConversation: null,
   },
   reducers: {
-    setOnlineUsers: (state, action) => {
-      state.onlineUsers = action.payload;
+    setSelectedConversation: (state, action) => {
+      state.selectedConversation = action.payload;
+    },
+    setConversation: (state, action) => {
+      state.conversations = action.payload;
+    },
+    addConversations: (state, action) => {
+      state.conversations.push(action.payload);
     },
     setMessages: (state, action) => {
       state.messages = action.payload;
@@ -19,9 +26,9 @@ const chatSlice = createSlice({
   },
 });
 export const {
-  setOnlineUsers,
   setMessages,
   addMessage,
+  setSelectedConversation,
   reset: resetChat,
 } = chatSlice.actions;
 export default chatSlice.reducer;

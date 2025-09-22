@@ -1,24 +1,36 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setSelectedPost } from "./postSlice";
-import { act } from "react";
+
+const initialState = {
+  isVerified: false,
+  loading: true,
+  profile: null,
+};
+
 const authSlice = createSlice({
   name: "auth",
-  initialState: {
-    user: null,
-    isVerified: false,
-  },
+  initialState,
   reducers: {
-    setAuth: (state, action) => {
-      state.user = action.payload;
-    },
     setVerified: (state, action) => {
-      state.isVerified = action.payload;
+      state.isVerified = true;
+      state.loading = false;
+      state.profile = action.payload;
     },
-    reset: () => ({
-      user: null,
-      isVerified: false,
-    }),
+    setProfile: (state, action) => {
+      state.profile = action.payload;
+    },
+    setUnverified: (state) => {
+      state.isVerified = false;
+      state.loading = false;
+      state.profile = null;
+    },
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+    },
+    resetAuth: () => initialState,
   },
 });
-export const { setAuth, reset: resetAuth, setVerified } = authSlice.actions;
+
+export const { setVerified, setUnverified, setLoading, resetAuth, setProfile } =
+  authSlice.actions;
+
 export default authSlice.reducer;

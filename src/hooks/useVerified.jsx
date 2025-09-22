@@ -1,13 +1,14 @@
-import { setAuth, setVerified } from "@/redux/authSlice";
-import axios from "axios";
-import { useDispatch } from "react-redux";
 import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import axios from "axios";
+import { setVerified, setUnverified, setLoading } from "@/redux/authSlice";
 
 const useVerified = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const verifyUser = async () => {
+    const verify = async () => {
+      dispatch(setLoading(true));
       try {
         const res = await axios.get(
           "http://localhost:5000/api/v1/auth/verified",
@@ -15,18 +16,15 @@ const useVerified = () => {
             withCredentials: true,
           }
         );
-        if (res.data.success) {
-          dispatch(setAuth(res.data.user));
-          dispatch(setVerified(true));
-        } else {
-          dispatch(setVerified(false));
+        if (res.data.user) {
+          dispatch(setVerified(res.data.user));
         }
-      } catch (error) {
-        dispatch(setVerified(false));
+      } catch (err) {
+        console.log(err);
+        dispatch(setUnverified());
       }
     };
-
-    verifyUser();
+    verify();
   }, [dispatch]);
 };
 

@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import axios from "axios";
-import { setUserProfile } from "@/redux/userSlice";
-import { setAuth } from "@/redux/authSlice";
+import { setIsCurrentUser, setUserProfile } from "@/redux/userSlice";
 
 const useUserProfile = (userId) => {
   const dispatch = useDispatch();
-  const [isCurrentUser, setIsCurrentUser] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,17 +17,13 @@ const useUserProfile = (userId) => {
         );
 
         if (res.data.success) {
+          dispatch(setUserProfile(res.data.user));
           if (res.data.isCurrentUser) {
-            dispatch(setAuth(res.data.resUser));
-            setIsCurrentUser(true);
-          } else {
-            dispatch(setUserProfile(res.data.resUser));
-            setIsCurrentUser(false);
+            dispatch(setIsCurrentUser(true));
           }
         }
       } catch (error) {
         console.error(error);
-        setIsCurrentUser(false);
       } finally {
         setLoading(false);
       }
@@ -37,8 +31,7 @@ const useUserProfile = (userId) => {
 
     if (userId) fetchGetUserProfile();
   }, [userId, dispatch]);
-
-  return { isCurrentUser, loading };
+  return loading;
 };
 
 export default useUserProfile;

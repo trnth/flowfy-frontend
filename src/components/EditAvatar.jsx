@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { useDispatch } from "react-redux";
 import axios from "axios";
 import { toast } from "sonner";
-import { setAuth } from "@/redux/authSlice";
+import { setProfile } from "@/redux/authSlice";
+import { setUserProfile } from "@/redux/userSlice";
 
 export default function EditAvatar({ open, onClose, imageSrc, fileInputRef }) {
   const dispatch = useDispatch();
@@ -96,7 +97,8 @@ export default function EditAvatar({ open, onClose, imageSrc, fileInputRef }) {
         { withCredentials: true }
       );
       if (res.data.success) {
-        dispatch(setAuth(res.data.user));
+        dispatch(setUserProfile(res.data.user));
+        dispatch(setProfile(res.data.user));
         toast.success("Update avatar successfully");
         handleCancel();
       }

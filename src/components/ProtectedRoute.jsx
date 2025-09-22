@@ -1,12 +1,11 @@
-import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { Navigate } from "react-router-dom";
 
 const ProtectedRoute = ({ children }) => {
-  const { user } = useSelector((store) => store.auth);
+  const { isVerified, loading } = useSelector((s) => s.auth);
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (loading) return <div>Loading...</div>;
+  if (!isVerified) return <Navigate to="/login" replace />;
 
   return children;
 };

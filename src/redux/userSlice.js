@@ -5,7 +5,8 @@ const userSlice = createSlice({
   initialState: {
     suggestedUsers: [],
     userProfile: null,
-    selectedUser: null,
+    onlineUsers: [],
+    isCurrentUser: false,
   },
   reducers: {
     setSuggestedUsers: (state, action) => {
@@ -13,6 +14,13 @@ const userSlice = createSlice({
     },
     setUserProfile: (state, action) => {
       state.userProfile = action.payload;
+      state.isCurrentUser = false;
+    },
+    setOnlineUsers: (state, action) => {
+      state.onlineUsers = action.payload;
+    },
+    setIsCurrentUser: (state, action) => {
+      state.isCurrentUser = action.payload;
     },
     updateUserProfile: (state, action) => {
       state.userProfile = {
@@ -20,21 +28,18 @@ const userSlice = createSlice({
         ...action.payload,
       };
     },
-    setSelectedUser: (state, action) => {
-      state.selectedUser = action.payload;
-    },
-
     reset: () => ({
       suggestedUsers: [],
       userProfile: null,
-      selectedUser: null,
+      onlineUsers: [],
     }),
   },
 });
 export const {
   setSuggestedUsers,
   setUserProfile,
-  setSelectedUser,
+  setOnlineUsers,
+  setIsCurrentUser,
   reset: resetUser,
   updateUserProfile,
 } = userSlice.actions;

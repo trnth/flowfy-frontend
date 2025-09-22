@@ -1,45 +1,39 @@
-import { useState } from "react";
-import { useDispatch } from "react-redux";
 import axios from "axios";
-import {
-  addBookmarks,
-  setBookmarks,
-  setBookmarksNextCursor,
-} from "@/redux/postSlice";
+import { useDispatch } from "react-redux";
 
-const useBookmarks = (limit = 10) => {
+const useGetConversation = () => {
   const dispatch = useDispatch();
+  const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
-
-  const fetchBookmarks = async (cursor = null) => {
+  const fetchBookmarks = async () => {
     if (loading || !hasMore) return;
     setLoading(true);
 
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/v1/user/bookmarks",
+        "http://localhost:5000/api/v1/conversation/all",
         {
           params: {
             limit,
-            lastCreatedAt: cursor,
+            lastCreatedAt: nextCursor,
           },
           withCredentials: true,
         }
       );
 
       if (res.data.success) {
-        const newBookmarks = res.data.bookmarks || [];
+        const newConversations = res.data.conversations || [];
 
-        if (newBookmarks.length === 0) {
+        if (newConversations.length === 0) {
           setHasMore(false);
         } else {
-          if (!cursor) {
-            dispatch(setBookmarks(newBookmarks));
+          if (!nextCursor) {
+            dispatch(setConver(nnewConversations));
           } else {
-            dispatch(addBookmarks(newBookmarks));
+            dispatch(addBookmarks(newConversations));
           }
-          dispatch(setBookmarksNextCursor(res.data.nextCursor || null));
+          setNextCursor(res.data.nextCursor);
           if (newBookmarks.length < limit) {
             setHasMore(false);
           }
@@ -53,12 +47,12 @@ const useBookmarks = (limit = 10) => {
   };
 
   const resetBookmarks = () => {
+    setNextCursor(null);
     setHasMore(true);
     dispatch(setBookmarks([]));
-    dispatch(setBookmarksNextCursor(null));
   };
 
   return { fetchBookmarks, hasMore, loading, resetBookmarks };
 };
 
-export default useBookmarks;
+export default useGetConversation;

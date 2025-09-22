@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { setAuth } from "@/redux/authSlice";
+import { setVerified } from "@/redux/authSlice";
 const Login = () => {
   const [input, setInput] = useState({
     loginValue: "",
@@ -20,7 +20,6 @@ const Login = () => {
     setInput({ ...input, [e.target.name]: e.target.value });
   };
   const loginHandler = async (e) => {
-    console.log(input);
     e.preventDefault();
     try {
       setLoading(true);
@@ -28,25 +27,25 @@ const Login = () => {
         "http://localhost:5000/api/v1/auth/login",
         input,
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           withCredentials: true,
         }
       );
+
       if (res.data.success) {
-        dispatch(setAuth(res.data.user));
+        dispatch(setVerified(res.data.user));
         navigate("/");
         toast.success(res.data.message);
-        setInput({ ...input, [e.target.name]: e.target.value });
+        setInput({ loginValue: "", password: "" });
       }
     } catch (error) {
       console.log(error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div>
       <div className="flex items-center w-screen h-screen justify-center">

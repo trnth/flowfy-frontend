@@ -13,18 +13,18 @@ import {
 import axios from "axios";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { setAuth } from "@/redux/authSlice";
 import AvatarMenu from "./AvatarMenu";
 import { Link } from "react-router-dom";
+import { setProfile } from "@/redux/authSlice";
 
 const EditProfile = () => {
-  const { user } = useSelector((store) => store.auth);
+  const { profile } = useSelector((store) => store.auth);
   const dispatch = useDispatch();
 
   const [input, setInput] = useState({
-    name: user?.name || "",
-    bio: user?.bio || "",
-    gender: user?.gender || "",
+    name: profile?.name || "",
+    bio: profile?.bio || "",
+    gender: profile?.gender || "",
   });
   const [loading, setLoading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -33,9 +33,9 @@ const EditProfile = () => {
     setInput((prev) => {
       const newInput = { ...prev, [field]: value };
       setIsDirty(
-        newInput.name !== user?.name ||
-          newInput.bio !== user?.bio ||
-          newInput.gender !== user?.gender
+        newInput.name !== profile?.name ||
+          newInput.bio !== profile?.bio ||
+          newInput.gender !== profile?.gender
       );
       return newInput;
     });
@@ -56,7 +56,7 @@ const EditProfile = () => {
       );
 
       if (res.data.success) {
-        dispatch(setAuth(res.data.user));
+        dispatch(setProfile(res.data.user));
         toast.success(res.data.message);
         setInput({
           name: res.data.user.name,
@@ -66,7 +66,8 @@ const EditProfile = () => {
         setIsDirty(false);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Cập nhật thất bại");
+      console.log(error.response?.data?.message);
+      toast.error("Cập nhật thất bại");
     } finally {
       setLoading(false);
     }
@@ -82,15 +83,15 @@ const EditProfile = () => {
           <div className="flex items-center gap-3">
             <Avatar className="w-12 h-12">
               <AvatarImage
-                src={user?.profilePicture}
+                src={profile?.profilePicture}
                 alt="user_profilePicture"
               />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="font-bold text-sm">{user?.username}</h1>
+              <h1 className="font-bold text-sm">{profile?.username}</h1>
               <span className="text-gray-600 text-sm">
-                {user?.name || "Name here..."}
+                {profile?.name || "Name here..."}
               </span>
             </div>
           </div>
@@ -142,7 +143,7 @@ const EditProfile = () => {
 
         {/* Submit button */}
         <div className="flex justify-between">
-          <Link to={`/profile/${user.username}`}>
+          <Link to={`/profile/${profile.username}`}>
             <Button className="w-fit bg-[#0095F6] hover:bg-[#2a8ccd] disabled:opacity-50">
               Back
             </Button>

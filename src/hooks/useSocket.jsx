@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { useSelector, useDispatch } from "react-redux";
-import { setOnlineUsers } from "@/redux/chatSlice";
 import { setSocketStatus } from "@/redux/socketSlice";
 import { setNotification } from "@/redux/notificationSlice";
+import { setOnlineUsers } from "@/redux/userSlice";
 
 const useSocket = () => {
   const { user, isVerified } = useSelector((store) => store.auth);

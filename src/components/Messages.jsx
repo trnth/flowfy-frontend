@@ -7,11 +7,11 @@ import useGetAllMessage from "@/hooks/useGetAllMessage";
 import useGetRealtimeMessage from "@/hooks/useGetRealtimeMessage";
 
 const Messages = () => {
-  const { user, selectedUser } = useSelector((store) => store.auth);
+  const { user } = useSelector((store) => store.auth);
+  const { selectedUser } = useSelector((store) => store.user);
   useGetRealtimeMessage();
   useGetAllMessage();
   const { messages } = useSelector((store) => store.chat);
-
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -19,7 +19,7 @@ const Messages = () => {
   const handleScroll = () => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const atBottom = scrollHeight - scrollTop <= clientHeight + 10; // 10px tolerance
+    const atBottom = scrollHeight - scrollTop <= clientHeight + 10;
     setIsAtBottom(atBottom);
   };
 

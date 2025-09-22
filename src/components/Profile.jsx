@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -9,6 +9,7 @@ import useUserPosts from "@/hooks/useUserPosts";
 import useUserProfile from "@/hooks/useUserProfile";
 import useBookmarks from "@/hooks/useBookmarks";
 import CommentDialog from "./CommentDialog";
+import FollowDialog from "./FollowDialog";
 import { setSelectedPost } from "@/redux/postSlice";
 import { TfiLayoutGrid3Alt } from "react-icons/tfi";
 import { FaRegBookmark } from "react-icons/fa";
@@ -19,20 +20,34 @@ import { updateUserProfile } from "@/redux/userSlice";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
+  const [isFollowDialogOpen, setIsFollowDialogOpen] = useState(false);
+  const [followDialogTab, setFollowDialogTab] = useState("followers");
   const { id: userId } = useParams();
-  const { isCurrentUser } = useUserProfile(userId);
+  const { loading } = useUserProfile(userId);
 
-  const authUser = useSelector((store) => store.auth.user);
-  const otherUser = useSelector((store) => store.user.userProfile);
-  const userProfile = isCurrentUser ? authUser : otherUser;
+  const { isCurrentUser } = useSelector((store) => store.user);
+  const { userProfile } = useSelector((store) => store.user);
+  const { userPost, bookmarks, userPostNextCursor, bookmarksNextCursor } =
+    useSelector((store) => store.post);
 
-  const { fetchUserPosts, resetPosts } = useUserPosts(userProfile?._id);
-  const { fetchBookmarks, resetBookmarks } = useBookmarks(userProfile?._id);
-  const { userPost, bookmarks } = useSelector((store) => store.post);
+  const {
+    fetchUserPosts,
+    resetPosts,
+    hasMore: hasMorePosts,
+    loading: postsLoading,
+  } = useUserPosts(userProfile?._id);
+  const {
+    fetchBookmarks,
+    resetBookmarks,
+    hasMore: hasMoreBookmarks,
+    loading: bookmarksLoading,
+  } = useBookmarks(userProfile?._id);
 
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const [openComment, setOpenComment] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const loadMoreRef = useRef(null);
 
   useEffect(() => {
     if (!userProfile?._id) return;
@@ -44,14 +59,45 @@ const Profile = () => {
       resetBookmarks();
       fetchBookmarks();
     }
-  }, [userProfile?._id]);
+  }, [userProfile?._id, activeTab]);
 
-  if (!userProfile) {
-    return <p className="text-center py-10">Đang tải ...</p>;
-  }
+  // Infinite scroll for posts/bookmarks
+  useEffect(() => {
+    if (!loadMoreRef.current || activeTab === "follow") return;
 
-  const displayedPost =
-    activeTab === "posts" ? userPost : activeTab === "saved" ? bookmarks : [];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          (activeTab === "posts" ? hasMorePosts : hasMoreBookmarks)
+        ) {
+          if (activeTab === "posts" && userPostNextCursor) {
+            fetchUserPosts(userPostNextCursor);
+          } else if (activeTab === "saved" && bookmarksNextCursor) {
+            fetchBookmarks(bookmarksNextCursor);
+          }
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => observer.disconnect();
+  }, [
+    activeTab,
+    hasMorePosts,
+    hasMoreBookmarks,
+    userPostNextCursor,
+    bookmarksNextCursor,
+    fetchUserPosts,
+    fetchBookmarks,
+  ]);
+
+  const openFollowDialog = (tab) => {
+    setFollowDialogTab(tab);
+    setIsFollowDialogOpen(true);
+  };
 
   const followHandler = async () => {
     setActionLoading(true);
@@ -149,12 +195,19 @@ const Profile = () => {
   };
 
   const openConversationHandler = async () => {
-    // Placeholder
+    navigate("/direct/inbox");
   };
+
+  if (loading) {
+    return <p className="text-center py-10">Đang tải...</p>;
+  }
+
+  const displayedPost =
+    activeTab === "posts" ? userPost : activeTab === "saved" ? bookmarks : [];
 
   return (
     <div className="flex max-w-4xl justify-center mx-auto pl-10">
-      <div className="flex flex-col gap-20 p-8">
+      <div className="flex flex-col gap-8 p-8 w-full">
         <div className="grid grid-cols-2">
           {/* avatar */}
           <section className="flex items-center justify-center">
@@ -251,13 +304,19 @@ const Profile = () => {
                   <span className="font-semibold">{userProfile?.posts}</span>{" "}
                   posts
                 </p>
-                <p>
+                <p
+                  className="cursor-pointer hover:underline"
+                  onClick={() => openFollowDialog("followers")}
+                >
                   <span className="font-semibold">
                     {userProfile?.followers}
                   </span>{" "}
                   followers
                 </p>
-                <p>
+                <p
+                  className="cursor-pointer hover:underline"
+                  onClick={() => openFollowDialog("following")}
+                >
                   <span className="font-semibold">
                     {userProfile?.followings}
                   </span>{" "}
@@ -337,9 +396,25 @@ const Profile = () => {
                 </div>
               ))}
             </div>
+            {(activeTab === "posts" ? hasMorePosts : hasMoreBookmarks) && (
+              <div
+                ref={loadMoreRef}
+                className="h-10 flex items-center justify-center"
+              >
+                {(postsLoading || bookmarksLoading) && (
+                  <p className="text-gray-500">Đang tải thêm...</p>
+                )}
+              </div>
+            )}
           </div>
 
           <CommentDialog open={openComment} setOpen={setOpenComment} />
+          <FollowDialog
+            userId={userProfile?._id}
+            isOpen={isFollowDialogOpen}
+            onClose={() => setIsFollowDialogOpen(false)}
+            initialTab={followDialogTab}
+          />
         </div>
       </div>
     </div>
