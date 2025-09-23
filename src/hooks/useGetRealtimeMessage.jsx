@@ -1,17 +1,20 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { addMessage } from "@/redux/chatSlice";
 import useSocket from "./useSocket";
-import store from "@/redux/store";
-import { addMessage, setMessages } from "@/redux/chatSlice";
 
 const useGetRealtimeMessage = () => {
   const dispatch = useDispatch();
   const socket = useSocket();
+  const { selectedConversation } = useSelector((store) => store.chat);
+
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !selectedConversation?._id) return;
 
     const handleNewMessage = (newMessage) => {
-      dispatch(addMessage(newMessage));
+      if (newMessage.conversationId === selectedConversation._id) {
+        dispatch(addMessage(newMessage));
+      }
     };
 
     socket.on("newMessage", handleNewMessage);
@@ -19,7 +22,7 @@ const useGetRealtimeMessage = () => {
     return () => {
       socket.off("newMessage", handleNewMessage);
     };
-  }, [socket, dispatch]);
+  }, [socket, dispatch, selectedConversation]);
 };
 
 export default useGetRealtimeMessage;

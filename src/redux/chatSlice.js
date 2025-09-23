@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+
 const chatSlice = createSlice({
   name: "chat",
   initialState: {
@@ -25,10 +26,13 @@ const chatSlice = createSlice({
     reset: () => ({ onlineUsers: [], messages: [] }),
   },
 });
+
 export const {
   setMessages,
   addMessage,
   setSelectedConversation,
+  setConversation,
+  addConversations,
   reset: resetChat,
 } = chatSlice.actions;
 export default chatSlice.reducer;

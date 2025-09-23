@@ -17,6 +17,8 @@ import AvatarMenu from "./AvatarMenu";
 import axios from "axios";
 import { toast } from "sonner";
 import { updateUserProfile } from "@/redux/userSlice";
+import { setSelectedConversation } from "@/redux/chatSlice";
+import store from "@/redux/store";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
@@ -24,7 +26,7 @@ const Profile = () => {
   const [followDialogTab, setFollowDialogTab] = useState("followers");
   const { id: userId } = useParams();
   const { loading } = useUserProfile(userId);
-
+  const { profile } = useSelector((store) => store.auth);
   const { isCurrentUser } = useSelector((store) => store.user);
   const { userProfile } = useSelector((store) => store.user);
   const { userPost, bookmarks, userPostNextCursor, bookmarksNextCursor } =
@@ -195,9 +197,37 @@ const Profile = () => {
   };
 
   const openConversationHandler = async () => {
-    navigate("/direct/inbox");
-  };
+    if (!userProfile?._id) {
+      toast.error("User profile not found");
+      return;
+    }
 
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/v1/message/conversation/${userProfile._id}`,
+        {},
+        { withCredentials: true }
+      );
+      if (res.data.success && res.data.conversation) {
+        dispatch(
+          setSelectedConversation({
+            _id: res.data.conversationId,
+            participants: res.data.conversation.participants,
+            isGroup: false,
+            lastRead: res.data.conversation.lastRead,
+          })
+        );
+        navigate("/direct/inbox");
+      } else {
+        toast.error(res.data.error || "Failed to start conversation");
+      }
+    } catch (error) {
+      console.error("Error in openConversationHandler:", error);
+      toast.error(
+        error.response?.data?.error || "Failed to start conversation"
+      );
+    }
+  };
   if (loading) {
     return <p className="text-center py-10">Đang tải...</p>;
   }

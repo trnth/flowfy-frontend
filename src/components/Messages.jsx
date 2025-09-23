@@ -7,11 +7,10 @@ import useGetAllMessage from "@/hooks/useGetAllMessage";
 import useGetRealtimeMessage from "@/hooks/useGetRealtimeMessage";
 
 const Messages = () => {
-  const { user } = useSelector((store) => store.auth);
-  const { selectedUser } = useSelector((store) => store.user);
-  useGetRealtimeMessage();
+  const user = useSelector((store) => store.auth.profile);
+  const { selectedConversation, messages } = useSelector((store) => store.chat);
   useGetAllMessage();
-  const { messages } = useSelector((store) => store.chat);
+  useGetRealtimeMessage();
   const containerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
@@ -29,6 +28,12 @@ const Messages = () => {
     }
   }, [messages, isAtBottom]);
 
+  if (!selectedConversation) return null;
+
+  const recipient = selectedConversation.isGroup
+    ? null
+    : selectedConversation.participants.find((p) => p._id !== user._id);
+
   return (
     <div
       className="overflow-auto flex-1 p-4"
@@ -37,19 +42,29 @@ const Messages = () => {
     >
       <div className="flex justify-center">
         <div className="flex flex-col items-center justify-center">
-          <Link to={`/profile/${selectedUser?._id}`}>
+          <Link to={`/profile/${recipient?._id}`}>
             <Avatar className="h-20 w-20">
               <AvatarImage
                 className="h-20 w-20"
-                src={selectedUser?.profilePicture}
+                src={
+                  selectedConversation.isGroup
+                    ? selectedConversation.groupPicture
+                    : recipient?.profilePicture
+                }
                 alt="profile"
               />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
           </Link>
-          <span>{selectedUser?.username}</span>
-          <Link to={`/profile/${selectedUser?._id}`} className="h-8 my-2">
-            <Button>View Profile</Button>
+          <span>
+            {selectedConversation.isGroup
+              ? selectedConversation.groupName
+              : recipient?.username}
+          </span>
+          <Link to={`/profile/${recipient?._id}`} className="h-8 my-2">
+            {selectedConversation.isGroup ? null : (
+              <Button>View Profile</Button>
+            )}
           </Link>
         </div>
       </div>
@@ -57,7 +72,8 @@ const Messages = () => {
       <div className="flex flex-col gap-3">
         {messages &&
           messages.map((msg) => {
-            const isOwnMessage = msg.senderId === user?._id;
+            const isOwnMessage = msg.sender?._id === user?._id;
+            const repliedMessage = msg.reply_to_id;
             return (
               <div
                 key={msg._id}
@@ -65,14 +81,30 @@ const Messages = () => {
                   isOwnMessage ? "justify-end" : "justify-start"
                 }`}
               >
-                <div
-                  className={`p-2 rounded-lg max-w-xs break-words ${
-                    isOwnMessage
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-black"
-                  }`}
-                >
-                  {msg.message}
+                <div className="flex flex-col max-w-xs">
+                  {repliedMessage && (
+                    <div
+                      className={`p-2 rounded-lg mb-1 ${
+                        isOwnMessage
+                          ? "bg-gray-100 text-black border-l-4 border-blue-500"
+                          : "bg-gray-100 text-black border-l-4 border-gray-500"
+                      }`}
+                    >
+                      <p className="text-xs font-semibold">
+                        {repliedMessage.sender?.username || "System"}
+                      </p>
+                      <p className="text-xs truncate">{repliedMessage.text}</p>
+                    </div>
+                  )}
+                  <div
+                    className={`p-2 rounded-lg break-words ${
+                      isOwnMessage
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-black"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
                 </div>
               </div>
             );

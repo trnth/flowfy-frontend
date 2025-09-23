@@ -6,6 +6,7 @@ import socketSlice from "./socketSlice.js";
 import chatSlice from "./chatSlice.js";
 import notificationSlice from "./notificationSlice.js";
 import followSlice from "./followSlice.js";
+
 const rootReducer = combineReducers({
   auth: authSlice,
   user: userSlice,
@@ -18,6 +19,7 @@ const rootReducer = combineReducers({
 
 const store = configureStore({
   reducer: rootReducer,
+  devTools: true, // bật devTools cho dev
 });
 
 export default store;

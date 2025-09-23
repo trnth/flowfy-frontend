@@ -82,15 +82,17 @@ const FollowDialog = ({
           }
         );
         dispatch(removeFollowing(targetUserId));
+
         toast.success("Đã hủy theo dõi");
       } else {
-        await axios.post(
+        const res = await axios.post(
           `http://localhost:5000/api/v1/user/${targetUserId}/follow`,
           {},
           {
             withCredentials: true,
           }
         );
+
         toast.success("Đã theo dõi");
       }
       if (activeTab === "followers") {
