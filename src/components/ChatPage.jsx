@@ -1,28 +1,44 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { FaRegEdit } from "react-icons/fa";
+import { MessageCircleCode } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { MessageCircleCode } from "lucide-react";
-import { FaRegEdit } from "react-icons/fa";
 import Messages from "./Messages";
 import axios from "axios";
 import {
   setMessages,
   setSelectedConversation,
   setConversation,
+  addMessage,
+  removeMessage,
 } from "@/redux/chatSlice";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 const ChatPage = () => {
-  const [textMessage, setTextMessage] = useState("");
   const user = useSelector((store) => store.auth.profile);
   const { conversations, selectedConversation, onlineUsers } = useSelector(
     (store) => store.chat
   );
   const dispatch = useDispatch();
+  const [textMessage, setTextMessage] = useState("");
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [messageStatus, setMessageStatus] = useState(null);
+  const [tempMessageId, setTempMessageId] = useState(null);
+  const messagesEndRef = useRef(null);
 
-  // Lấy danh sách cuộc trò chuyện khi vào trang
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    console.log("onlineUsers:", onlineUsers);
+  }, [onlineUsers]);
+
   useEffect(() => {
     const fetchConversations = async () => {
       if (!user?._id) {
@@ -73,34 +89,111 @@ const ChatPage = () => {
     }
   };
 
-  const sendMessageHandler = async (conversationId) => {
-    if (!conversationId || !textMessage.trim()) {
-      toast.error("Invalid conversation or message");
+  const updateConversationUnread = (conversationId) => {
+    const updatedConversations = conversations.map((conv) =>
+      conv._id === conversationId ? { ...conv, unread: false } : conv
+    );
+    dispatch(setConversation(updatedConversations));
+  };
+
+  const truncateMessage = (text, maxLength = 50) => {
+    if (!text) return "";
+    return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
+  };
+
+  const handleSendMessage = async (
+    text = textMessage,
+    replyToId = replyingTo?._id
+  ) => {
+    if (!text.trim() || !selectedConversation?._id) {
+      toast.error("Invalid message or conversation");
       return;
     }
+    setMessageStatus("pending");
+    const tempId = `temp-${Date.now()}`;
+    const tempMessage = {
+      _id: tempId,
+      sender: {
+        _id: user._id,
+        username: user.username,
+        profilePicture: user.profilePicture,
+      },
+      text,
+      conversationId: selectedConversation._id,
+      createdAt: new Date().toISOString(),
+      reply_to_id: replyToId || null,
+      isTemp: true,
+    };
+    setTempMessageId(tempId);
+    dispatch(addMessage(tempMessage));
+
     try {
       const res = await axios.post(
-        `http://localhost:5000/api/v1/message/${conversationId}/send`,
-        { textMessage },
+        `http://localhost:5000/api/v1/message/${selectedConversation._id}/send`,
+        {
+          textMessage: text,
+          replyToId: replyToId || null,
+        },
         {
           headers: { "Content-Type": "application/json" },
           withCredentials: true,
         }
       );
-      if (res.data.success) {
-        setTextMessage("");
-        dispatch(
-          setMessages([
-            ...(selectedConversation?.messages || []),
-            res.data.newMessage,
-          ])
+
+      if (res.status === 201 && res.data?.success === true) {
+        const processedNewMessage = {
+          ...res.data.newMessage,
+          createdAt: new Date(res.data.newMessage.createdAt).toISOString(),
+          reply_to_id: res.data.newMessage.reply_to_id
+            ? {
+                ...res.data.newMessage.reply_to_id,
+                createdAt: new Date(
+                  res.data.newMessage.reply_to_id.createdAt
+                ).toISOString(),
+              }
+            : null,
+        };
+        setMessageStatus("sent");
+        dispatch(removeMessage(tempId));
+        dispatch(addMessage(processedNewMessage));
+        const updatedConversations = conversations.map((conv) =>
+          conv._id === selectedConversation._id
+            ? { ...conv, lastMessage: processedNewMessage, unread: false }
+            : conv
         );
+        dispatch(setConversation(updatedConversations));
+        setTextMessage("");
+        setReplyingTo(null);
+        setTempMessageId(null);
+        scrollToBottom();
       } else {
-        toast.error(res.data.error || "Failed to send message");
+        setMessageStatus("failed");
+        toast.error(res.data?.error || "Failed to send message");
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Send message error:", error);
+      setMessageStatus("failed");
       toast.error(error.response?.data?.error || "Failed to send message");
+    }
+  };
+
+  const handleRetrySend = async () => {
+    if (tempMessageId) {
+      dispatch(removeMessage(tempMessageId));
+      setTempMessageId(null);
+    }
+    await handleSendMessage();
+  };
+
+  const cancelReplyHandler = () => {
+    setReplyingTo(null);
+  };
+
+  // Xử lý nhấn Enter để gửi tin nhắn
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
@@ -113,13 +206,23 @@ const ChatPage = () => {
           </h1>
           <FaRegEdit className="w-8 h-8 lg:mx-4 my-4" />
         </div>
-        <hr className="mb-4 border-gray-300" />
+        <hr className=" border-gray-300" />
         <div className="overflow-y-auto h-[80vh]">
           {conversations?.map((conversation) => {
             const recipient = conversation.isGroup
               ? null
               : conversation.participants?.find((p) => p?._id !== user?._id);
             const isOnline = recipient && onlineUsers?.includes(recipient?._id);
+            const lastMessage = conversation.lastMessage;
+            const senderName =
+              lastMessage?.sender?._id === user?._id
+                ? "Bạn"
+                : lastMessage?.sender?.username || "System";
+            const timeAgo = lastMessage?.createdAt
+              ? formatDistanceToNow(new Date(lastMessage.createdAt), {
+                  addSuffix: true,
+                })
+              : "";
             return (
               <div
                 key={conversation._id}
@@ -128,45 +231,52 @@ const ChatPage = () => {
                   selectedConversation?._id === conversation._id
                     ? "bg-gray-100"
                     : ""
-                }`}
+                } ${conversation.unread ? "font-bold" : ""}`}
               >
-                <Avatar className="w-14 h-14">
-                  <AvatarImage
-                    src={
-                      conversation.isGroup
-                        ? conversation.groupPicture || ""
-                        : recipient?.profilePicture || ""
-                    }
-                  />
-                  <AvatarFallback>CN</AvatarFallback>
-                </Avatar>
-                <div className="hidden lg:flex lg:flex-col">
-                  <span>
-                    {conversation.isGroup
-                      ? conversation.groupName || "Group"
-                      : recipient?.username || "Unknown"}
-                  </span>
-                  <span
-                    className={`text-xs font-bold ${
-                      conversation.isGroup
-                        ? ""
-                        : isOnline
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
+                <div className="relative">
+                  <Avatar className="w-14 h-14">
+                    <AvatarImage
+                      src={
+                        conversation.isGroup
+                          ? conversation.groupPicture || ""
+                          : recipient?.profilePicture || ""
+                      }
+                    />
+                    <AvatarFallback>CN</AvatarFallback>
+                  </Avatar>
+                  {!conversation.isGroup && (
+                    <span
+                      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full ${
+                        isOnline ? "bg-green-600" : "bg-red-600"
+                      }`}
+                    ></span>
+                  )}
+                </div>
+                <div className="hidden lg:flex lg:flex-col flex-1">
+                  <div className="flex justify-between items-center">
+                    <span>
+                      {conversation.isGroup
+                        ? conversation.groupName || "Group"
+                        : recipient?.username || "Unknown"}
+                    </span>
+                    {conversation.unread && (
+                      <span className="ml-auto bg-blue-500 text-white text-xs rounded-full px-2 py-1">
+                        New
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-500">
                     {conversation.isGroup
                       ? `Group (${conversation.participantsCount || 0} members)`
-                      : isOnline
-                      ? "online"
-                      : "offline"}
+                      : ""}
                   </span>
+                  {lastMessage && (
+                    <span className="text-xs text-gray-600 truncate">
+                      Từ {senderName}: {truncateMessage(lastMessage.text)} (
+                      {timeAgo})
+                    </span>
+                  )}
                 </div>
-                {conversation.unread && (
-                  <span className="ml-auto bg-blue-500 text-white text-xs rounded-full px-2 py-1">
-                    New
-                  </span>
-                )}
               </div>
             );
           })}
@@ -202,29 +312,69 @@ const ChatPage = () => {
               )}
             </div>
           </div>
-          <Messages />
-          <div className="flex items-center p-4">
-            <Input
-              value={textMessage}
-              onChange={(e) => setTextMessage(e.target.value)}
-              type="text"
-              className="flex-1 mr-2 focus-visible:ring-transparent"
-              placeholder="Message..."
-            />
-            {textMessage.trim() && (
-              <Button
-                onClick={() => sendMessageHandler(selectedConversation._id)}
-              >
-                Send
-              </Button>
+          <Messages
+            updateConversationUnread={updateConversationUnread}
+            setReplyingTo={setReplyingTo}
+            handleSendMessage={handleSendMessage}
+            handleRetrySend={handleRetrySend}
+            messagesEndRef={messagesEndRef}
+          />
+          <div className="sticky bottom-0 bg-white border-t border-gray-300 p-4 z-10">
+            {replyingTo && (
+              <div className="flex items-center p-2 bg-gray-100 rounded mb-2 min-w-0">
+                <span className="text-sm text-gray-600 mr-2 shrink-0">
+                  Đang trả lời {replyingTo.sender?.username || "System"}:
+                </span>
+                <span className="text-sm truncate flex-1 min-w-0">
+                  {replyingTo.text}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-2 shrink-0"
+                  onClick={cancelReplyHandler}
+                >
+                  Hủy
+                </Button>
+              </div>
             )}
+            <div className="flex items-center w-full gap-2">
+              <div className="flex-1 min-w-0">
+                <Input
+                  value={textMessage}
+                  onChange={(e) => setTextMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  type="text"
+                  className="w-full focus-visible:ring-transparent"
+                  placeholder="Nhập tin nhắn..."
+                />
+              </div>
+              {textMessage.trim() && (
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={messageStatus === "pending"}
+                >
+                  Gửi
+                </Button>
+              )}
+              {messageStatus === "failed" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRetrySend}
+                  className="p-0 h-auto"
+                >
+                  <RotateCw className="w-4 h-4" /> Thử lại
+                </Button>
+              )}
+            </div>
           </div>
         </section>
       ) : (
         <div className="flex flex-col items-center justify-center mx-auto">
           <MessageCircleCode className="w-32 h-32 my-4" />
-          <h1 className="font-medium">Your messages</h1>
-          <span>Send a message to start a chat.</span>
+          <h1 className="font-medium">Tin nhắn của bạn</h1>
+          <span>Gửi tin nhắn để bắt đầu trò chuyện.</span>
         </div>
       )}
     </div>

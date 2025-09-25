@@ -1,39 +1,60 @@
-import { setMessages } from "@/redux/chatSlice";
+import { addOldMessages, setMessages } from "@/redux/chatSlice";
 import axios from "axios";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
 const useGetAllMessage = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((store) => store.auth.profile);
-  const { selectedConversation } = useSelector(
-    (store) => store.chat.selectedConversation
-  );
-  useEffect(() => {
-    const fetchAllMessage = async () => {
-      if (!selectedConversation?._id) {
-        return;
-      }
-      try {
-        const res = await axios.get(
-          `http://localhost:5000/api/v1/message/${selectedConversation._id}/all`,
-          {
-            withCredentials: true,
-          }
-        );
-        if (res.data.success) {
-          dispatch(setMessages(res.data.messages));
-        } else {
-          toast.error(res.data.error || "Failed to load messages");
+  const { selectedConversation } = useSelector((store) => store.chat);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const fetchMessages = async (lastMessageCreatedAt = null) => {
+    if (!selectedConversation?._id || loading || isFetching) return;
+    setLoading(true);
+    setIsFetching(true);
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/v1/message/${selectedConversation._id}/all`,
+        {
+          params: { lastMessageCreatedAt },
+          withCredentials: true,
         }
-      } catch (error) {
-        console.error("Error fetching messages:", error);
-        toast.error(error.response?.data?.error || "Failed to load messages");
+      );
+
+      if (res.data.success) {
+        const messages = res.data.messages; // Backend trả newest -> oldest
+        if (lastMessageCreatedAt) {
+          dispatch(addOldMessages(messages));
+        } else {
+          dispatch(setMessages(messages));
+        }
+        setHasMore(res.data.hasMore);
+      } else {
+        toast.error(res.data.error || "Không thể tải tin nhắn");
       }
-    };
-    fetchAllMessage();
-  }, [dispatch, selectedConversation, user]);
+    } catch (error) {
+      console.error("Lỗi khi tải tin nhắn:", error);
+      toast.error(error.response?.data?.error || "Không thể tải tin nhắn");
+    } finally {
+      setLoading(false);
+      setIsFetching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedConversation?._id) {
+      fetchMessages();
+    }
+  }, [selectedConversation?._id]);
+
+  return {
+    fetchMoreMessages: (lastCreatedAt) => fetchMessages(lastCreatedAt),
+    hasMore,
+    loading,
+  };
 };
 
 export default useGetAllMessage;

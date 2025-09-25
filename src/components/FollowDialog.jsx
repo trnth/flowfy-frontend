@@ -6,6 +6,7 @@ import { Dialog, DialogContent } from "./ui/dialog";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { removeFollower, removeFollowing } from "../redux/followSlice";
+import { Link } from "react-router-dom";
 
 const FollowDialog = ({
   userId,
@@ -130,14 +131,19 @@ const FollowDialog = ({
   const UserItem = ({ user, isFollowing }) => (
     <div className="flex items-center justify-between p-3 hover:bg-gray-100">
       <div className="flex items-center space-x-3">
-        <img
-          src={user.profilePicture || "/default-avatar.png"}
-          alt={user.name}
-          className="w-10 h-10 rounded-full object-cover"
-        />
+        <Link to={`/profile/${user.username}`} onClick={onClose}>
+          <img
+            src={user.profilePicture || "/default-avatar.png"}
+            alt={user.name}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+        </Link>
+
         <div>
-          <p className="font-semibold">{user.name}</p>
-          <p className="text-sm text-gray-500">@{user.username}</p>
+          <Link to={`/profile/${user.username}`} onClick={onClose}>
+            <p className="font-semibold">{user.name}</p>
+            <p className="text-sm text-gray-500">@{user.username}</p>
+          </Link>
         </div>
       </div>
       {currentUser?._id !== user._id && (
