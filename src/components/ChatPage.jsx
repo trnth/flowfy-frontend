@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { FaRegEdit } from "react-icons/fa";
-import { MessageCircleCode } from "lucide-react";
+import { MessageCircleCode, RotateCw } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import Messages from "./Messages";
@@ -16,6 +16,7 @@ import {
 } from "@/redux/chatSlice";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 
 const ChatPage = () => {
   const user = useSelector((store) => store.auth.profile);
@@ -23,22 +24,21 @@ const ChatPage = () => {
     (store) => store.chat
   );
   const dispatch = useDispatch();
+
   const [textMessage, setTextMessage] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
   const [messageStatus, setMessageStatus] = useState(null);
   const [tempMessageId, setTempMessageId] = useState(null);
-  const messagesEndRef = useRef(null);
 
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  /** 🔹 Refs quản lý last read */
+  const lastReadMessageIdRef = useRef(null);
+  const lastConversationIdRef = useRef(null);
 
   useEffect(() => {
     console.log("onlineUsers:", onlineUsers);
   }, [onlineUsers]);
 
+  /** 🔹 Load tất cả conversation khi mở trang */
   useEffect(() => {
     const fetchConversations = async () => {
       if (!user?._id) {
@@ -67,6 +67,7 @@ const ChatPage = () => {
     fetchConversations();
   }, [dispatch, user]);
 
+  /** 🔹 Chọn conversation và load tin nhắn */
   const selectConversationHandler = async (conversation) => {
     if (!conversation?._id) {
       toast.error("Invalid conversation");
@@ -74,6 +75,11 @@ const ChatPage = () => {
     }
     try {
       dispatch(setSelectedConversation(conversation));
+
+      // Reset lastRead refs khi đổi conversation
+      lastReadMessageIdRef.current = null;
+      lastConversationIdRef.current = null;
+
       const res = await axios.get(
         `http://localhost:5000/api/v1/message/${conversation._id}/all`,
         { withCredentials: true }
@@ -89,6 +95,7 @@ const ChatPage = () => {
     }
   };
 
+  /** 🔹 Cập nhật trạng thái unread */
   const updateConversationUnread = (conversationId) => {
     const updatedConversations = conversations.map((conv) =>
       conv._id === conversationId ? { ...conv, unread: false } : conv
@@ -96,11 +103,12 @@ const ChatPage = () => {
     dispatch(setConversation(updatedConversations));
   };
 
-  const truncateMessage = (text, maxLength = 50) => {
+  const truncateMessage = (text, maxLength = 25) => {
     if (!text) return "";
     return text.length > maxLength ? text.slice(0, maxLength) + "..." : text;
   };
 
+  /** 🔹 Gửi tin nhắn */
   const handleSendMessage = async (
     text = textMessage,
     replyToId = replyingTo?._id
@@ -156,6 +164,7 @@ const ChatPage = () => {
         setMessageStatus("sent");
         dispatch(removeMessage(tempId));
         dispatch(addMessage(processedNewMessage));
+
         const updatedConversations = conversations.map((conv) =>
           conv._id === selectedConversation._id
             ? { ...conv, lastMessage: processedNewMessage, unread: false }
@@ -165,15 +174,42 @@ const ChatPage = () => {
         setTextMessage("");
         setReplyingTo(null);
         setTempMessageId(null);
-        scrollToBottom();
+
+        return processedNewMessage;
       } else {
         setMessageStatus("failed");
         toast.error(res.data?.error || "Failed to send message");
+        return null;
       }
     } catch (error) {
       console.error("Send message error:", error);
       setMessageStatus("failed");
       toast.error(error.response?.data?.error || "Failed to send message");
+      return null;
+    }
+  };
+
+  /** 🔹 Gửi tin nhắn & mark read */
+  const handleSendMessageWithRead = async (messageText) => {
+    try {
+      const newMessage = await handleSendMessage(messageText);
+      if (newMessage?._id && selectedConversation?._id) {
+        if (
+          lastReadMessageIdRef.current !== newMessage._id ||
+          lastConversationIdRef.current !== selectedConversation._id
+        ) {
+          await axios.post(
+            `http://localhost:5000/api/v1/message/${selectedConversation._id}/read`,
+            { lastMessageId: newMessage._id },
+            { withCredentials: true }
+          );
+          lastReadMessageIdRef.current = newMessage._id;
+          lastConversationIdRef.current = selectedConversation._id;
+          updateConversationUnread(selectedConversation._id);
+        }
+      }
+    } catch (err) {
+      console.error("Error sending message or marking read:", err);
     }
   };
 
@@ -189,11 +225,10 @@ const ChatPage = () => {
     setReplyingTo(null);
   };
 
-  // Xử lý nhấn Enter để gửi tin nhắn
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      handleSendMessageWithRead(textMessage);
     }
   };
 
@@ -206,7 +241,7 @@ const ChatPage = () => {
           </h1>
           <FaRegEdit className="w-8 h-8 lg:mx-4 my-4" />
         </div>
-        <hr className=" border-gray-300" />
+        <hr className="border-gray-300" />
         <div className="overflow-y-auto h-[80vh]">
           {conversations?.map((conversation) => {
             const recipient = conversation.isGroup
@@ -220,7 +255,8 @@ const ChatPage = () => {
                 : lastMessage?.sender?.username || "System";
             const timeAgo = lastMessage?.createdAt
               ? formatDistanceToNow(new Date(lastMessage.createdAt), {
-                  addSuffix: true,
+                  addSuffix: false,
+                  locale: vi,
                 })
               : "";
             return (
@@ -282,6 +318,7 @@ const ChatPage = () => {
           })}
         </div>
       </section>
+
       {selectedConversation && user ? (
         <section className="flex-1 flex flex-col h-full">
           <div className="flex gap-3 items-center px-3 py-1 border-b border-gray-300 sticky top-0 bg-white z-10">
@@ -312,13 +349,15 @@ const ChatPage = () => {
               )}
             </div>
           </div>
+
           <Messages
             updateConversationUnread={updateConversationUnread}
             setReplyingTo={setReplyingTo}
             handleSendMessage={handleSendMessage}
+            handleSendMessageWithRead={handleSendMessageWithRead}
             handleRetrySend={handleRetrySend}
-            messagesEndRef={messagesEndRef}
           />
+
           <div className="sticky bottom-0 bg-white border-t border-gray-300 p-4 z-10">
             {replyingTo && (
               <div className="flex items-center p-2 bg-gray-100 rounded mb-2 min-w-0">
@@ -351,7 +390,7 @@ const ChatPage = () => {
               </div>
               {textMessage.trim() && (
                 <Button
-                  onClick={handleSendMessage}
+                  onClick={() => handleSendMessageWithRead(textMessage)}
                   disabled={messageStatus === "pending"}
                 >
                   Gửi

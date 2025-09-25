@@ -1,6 +1,6 @@
 import { addOldMessages, setMessages } from "@/redux/chatSlice";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 
@@ -10,9 +10,16 @@ const useGetAllMessage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const lastConversationIdRef = useRef(null); // Theo dõi conversationId
 
   const fetchMessages = async (lastMessageCreatedAt = null) => {
     if (!selectedConversation?._id || loading || isFetching) return;
+    if (
+      lastConversationIdRef.current === selectedConversation._id &&
+      !lastMessageCreatedAt
+    ) {
+      return; // Bỏ qua nếu đã tải tin nhắn cho conversation này
+    }
     setLoading(true);
     setIsFetching(true);
     try {
@@ -25,11 +32,21 @@ const useGetAllMessage = () => {
       );
 
       if (res.data.success) {
-        const messages = res.data.messages; // Backend trả newest -> oldest
+        const messages = res.data.messages.map((msg) => ({
+          ...msg,
+          createdAt: new Date(msg.createdAt).toISOString(),
+          reply_to_id: msg.reply_to_id
+            ? {
+                ...msg.reply_to_id,
+                createdAt: new Date(msg.reply_to_id.createdAt).toISOString(),
+              }
+            : null,
+        }));
         if (lastMessageCreatedAt) {
           dispatch(addOldMessages(messages));
         } else {
           dispatch(setMessages(messages));
+          lastConversationIdRef.current = selectedConversation._id; // Cập nhật conversationId
         }
         setHasMore(res.data.hasMore);
       } else {
