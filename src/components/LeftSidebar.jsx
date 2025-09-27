@@ -29,7 +29,11 @@ import { resetChat } from "@/redux/chatSlice";
 import CreatePost from "./CreatePost";
 import { resetNotification } from "@/redux/notificationSlice";
 import SearchPage from "./SearchPage";
-import NotificationPage from "./NotificationPage";
+import NotificationDialog from "./NotificationDialog";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/contexts/ToastContext";
+import { getCommonClasses } from "@/utils/themeUtils";
 
 const LeftSidebar = () => {
   const [open, setOpen] = useState(false);
@@ -41,7 +45,13 @@ const LeftSidebar = () => {
   const { profile } = useSelector((store) => store.auth);
   const location = useLocation();
   const isInboxPage = location.pathname.startsWith("/direct/inbox");
+  const isSettingsPage = location.pathname.startsWith("/accounts/edit");
   const { notifications } = useSelector((store) => store.notification);
+  const unreadCount = notifications.filter((n) => n && !n.isRead).length;
+  const { isDark } = useTheme();
+  const { t } = useLanguage();
+  const { success, error } = useToast();
+  const classes = getCommonClasses(isDark);
 
   if (!profile) return null;
 
@@ -57,7 +67,7 @@ const LeftSidebar = () => {
       dispatch(resetNotification());
       if (res.data.success) {
         navigate("/login");
-        toast.success(res.data.message);
+        success("toast.success.logout");
       }
     } catch (error) {
       console.error("Lỗi đăng xuất:", error);
@@ -98,12 +108,28 @@ const LeftSidebar = () => {
   };
 
   const sidebarItemsTop = [
-    { icon: <Home />, text: "Home" },
-    { icon: <Search />, text: "Search" },
-    { icon: <TrendingUp />, text: "Explore" },
-    { icon: <MessageCircle />, text: "Message" },
-    { icon: <Heart />, text: "Notifications" },
-    { icon: <PlusSquare />, text: "Create" },
+    { icon: <Home />, text: t("sidebar.home") || "Home", key: "Home" },
+    { icon: <Search />, text: t("sidebar.search") || "Search", key: "Search" },
+    {
+      icon: <TrendingUp />,
+      text: t("sidebar.explore") || "Explore",
+      key: "Explore",
+    },
+    {
+      icon: <MessageCircle />,
+      text: t("sidebar.message") || "Message",
+      key: "Message",
+    },
+    {
+      icon: <Heart />,
+      text: t("sidebar.notifications") || "Notifications",
+      key: "Notifications",
+    },
+    {
+      icon: <PlusSquare />,
+      text: t("sidebar.create") || "Create",
+      key: "Create",
+    },
     {
       icon: (
         <Avatar className="w-6 h-6">
@@ -111,26 +137,36 @@ const LeftSidebar = () => {
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
       ),
-      text: "Profile",
+      text: t("sidebar.profile") || "Profile",
+      key: "Profile",
     },
   ];
 
   return (
     <>
       <div
-        className={`fixed top-0 z-30 left-0 px-4 border-r border-gray-300 h-screen hidden md:block transition-all duration-300 ease-in-out ${
-          isInboxPage || openSearch || openNotifications
+        className={`fixed top-0 z-30 left-0 px-4 border-r h-screen transition-all duration-300 ease-in-out ${
+          isInboxPage || openSearch || openNotifications || isSettingsPage
             ? "w-[80px]"
             : "w-[60px] md:w-[80px] lg:w-[16%]"
+        } ${
+          isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"
         }`}
       >
         <div className="flex flex-col h-full justify-between relative">
           {/* Nhóm trên */}
-          <div>
-            <h1 className="text-center font-bold text-2xl my-4 lg:pl-3 px-3">
+          <div className="flex-1">
+            <h1
+              className={`text-center font-bold text-2xl my-4 lg:pl-3 px-3 ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}
+            >
               <span
                 className={`${
-                  isInboxPage || openSearch || openNotifications
+                  isInboxPage ||
+                  openSearch ||
+                  openNotifications ||
+                  isSettingsPage
                     ? "block"
                     : "block lg:hidden"
                 }`}
@@ -139,7 +175,10 @@ const LeftSidebar = () => {
               </span>
               <span
                 className={`${
-                  isInboxPage || openSearch || openNotifications
+                  isInboxPage ||
+                  openSearch ||
+                  openNotifications ||
+                  isSettingsPage
                     ? "opacity-0 absolute"
                     : "hidden lg:inline"
                 }`}
@@ -150,17 +189,24 @@ const LeftSidebar = () => {
 
             {sidebarItemsTop.map((item, index) => (
               <div
-                onClick={() => sidebarHandler(item.text)}
+                onClick={() => sidebarHandler(item.key)}
                 key={index}
-                className="flex items-center gap-4 relative hover:bg-gray-100 cursor-pointer rounded-lg p-3"
+                className={`flex items-center gap-4 relative cursor-pointer rounded-lg p-3 transition-colors ${
+                  isDark
+                    ? "hover:bg-gray-800 text-gray-300 hover:text-white"
+                    : "hover:bg-gray-100 text-gray-700"
+                }`}
               >
                 {item.icon}
-                {!(isInboxPage || openSearch || openNotifications) && (
-                  <span className="hidden lg:inline">{item.text}</span>
-                )}
-                {item.text === "Notifications" && notifications?.length > 0 && (
+                {!(
+                  isInboxPage ||
+                  openSearch ||
+                  openNotifications ||
+                  isSettingsPage
+                ) && <span className="hidden lg:inline">{item.text}</span>}
+                {item.key === "Notifications" && unreadCount > 0 && (
                   <div className="rounded-full h-5 w-5 bg-red-600 text-white text-xs flex items-center justify-center absolute bottom-6 left-6">
-                    {notifications.length}
+                    {unreadCount > 99 ? "99+" : unreadCount}
                   </div>
                 )}
               </div>
@@ -168,13 +214,26 @@ const LeftSidebar = () => {
           </div>
 
           {/* Nút More ở dưới */}
-          <div className="mb-4">
+          <div className="mt-auto mb-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <div className="flex items-center gap-4 hover:bg-gray-100 cursor-pointer rounded-lg p-3">
+                <div
+                  className={`flex items-center gap-4 cursor-pointer rounded-lg p-3 transition-colors ${
+                    isDark
+                      ? "hover:bg-gray-800 text-gray-300 hover:text-white"
+                      : "hover:bg-gray-100 text-gray-700"
+                  }`}
+                >
                   <MoreHorizontal />
-                  {!(isInboxPage || openSearch || openNotifications) && (
-                    <span className="hidden lg:inline">More</span>
+                  {!(
+                    isInboxPage ||
+                    openSearch ||
+                    openNotifications ||
+                    isSettingsPage
+                  ) && (
+                    <span className="hidden lg:inline">
+                      {t("sidebar.more") || "More"}
+                    </span>
                   )}
                 </div>
               </DropdownMenuTrigger>
@@ -187,19 +246,19 @@ const LeftSidebar = () => {
                   onClick={() => navigate("/accounts/edit")}
                   className="flex items-center gap-2"
                 >
-                  <Settings size={20} /> Settings
+                  <Settings size={20} /> {t("sidebar.settings") || "Settings"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => toast.info("View Activity")}
                   className="flex items-center gap-2"
                 >
-                  <Clock size={20} /> Activity
+                  <Clock size={20} /> {t("sidebar.activity") || "Activity"}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={logoutHandler}
                   className="flex items-center gap-2 text-red-500"
                 >
-                  <LogOut size={20} /> Logout
+                  <LogOut size={20} /> {t("sidebar.logout") || "Logout"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -209,7 +268,7 @@ const LeftSidebar = () => {
 
       <CreatePost open={open} setOpen={setOpen} />
       <SearchPage open={openSearch} setOpen={setOpenSearch} />
-      <NotificationPage
+      <NotificationDialog
         open={openNotifications}
         setOpen={setOpenNotifications}
       />

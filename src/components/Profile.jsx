@@ -15,10 +15,13 @@ import { TfiLayoutGrid3Alt } from "react-icons/tfi";
 import { FaRegBookmark } from "react-icons/fa";
 import AvatarMenu from "./AvatarMenu";
 import axios from "axios";
-import { toast } from "sonner";
 import { updateUserProfile } from "@/redux/userSlice";
-import { setSelectedConversation } from "@/redux/chatSlice";
+import { setMessages, setSelectedConversation } from "@/redux/chatSlice";
+import { useToast } from "@/contexts/ToastContext";
 import store from "@/redux/store";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getCommonClasses } from "@/utils/themeUtils";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("posts");
@@ -31,6 +34,10 @@ const Profile = () => {
   const { userProfile } = useSelector((store) => store.user);
   const { userPost, bookmarks, userPostNextCursor, bookmarksNextCursor } =
     useSelector((store) => store.post);
+  const { isDark } = useTheme();
+  const { t } = useLanguage();
+  const { success, error } = useToast();
+  const classes = getCommonClasses(isDark);
 
   const {
     fetchUserPosts,
@@ -50,6 +57,13 @@ const Profile = () => {
   const [openComment, setOpenComment] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const loadMoreRef = useRef(null);
+
+  useEffect(() => {
+    if (!userProfile?._id) return;
+
+    // Reset activeTab to "posts" when switching users
+    setActiveTab("posts");
+  }, [userProfile?._id]);
 
   useEffect(() => {
     if (!userProfile?._id) return;
@@ -119,16 +133,16 @@ const Profile = () => {
             isAccepted: res.data.data.isAccepted,
           })
         );
-        toast.success(res.data.message);
+        success("toast.success.followed");
       } else {
-        toast.error("Follow action failed: Invalid response");
+        error("toast.error.follow");
       }
     } catch (error) {
       console.error(
         "Error in followHandler:",
         error.response?.data?.message || error.message
       );
-      toast.error(error.response?.data?.message || "Follow action failed");
+      error("toast.error.follow");
     } finally {
       setActionLoading(false);
     }
@@ -151,16 +165,16 @@ const Profile = () => {
             isAccepted: false,
           })
         );
-        toast.success(res.data.message);
+        success("toast.success.unfollowed");
       } else {
-        toast.error("Unfollow action failed: Invalid response");
+        error("toast.error.unfollow");
       }
     } catch (error) {
       console.error(
         "Error in unfollowHandler:",
         error.response?.data?.message || error.message
       );
-      toast.error(error.response?.data?.message || "Unfollow action failed");
+      error("toast.error.unfollow");
     } finally {
       setActionLoading(false);
     }
@@ -170,7 +184,7 @@ const Profile = () => {
     setActionLoading(true);
     try {
       const res = await axios.delete(
-        `http://localhost:5000/api/v1/user/follow/${userProfile._id}/cancel`,
+        `http://localhost:5000/api/v1/user/${userProfile._id}/follow/cancel`,
         { withCredentials: true }
       );
       if (res.data.success) {
@@ -208,15 +222,35 @@ const Profile = () => {
         {},
         { withCredentials: true }
       );
-      if (res.data.success && res.data.conversation) {
-        dispatch(
-          setSelectedConversation({
-            _id: res.data.conversationId,
-            participants: res.data.conversation.participants,
-            isGroup: false,
-            lastRead: res.data.conversation.lastRead,
-          })
-        );
+      if (res.data.success) {
+        if (res.data.conversation) {
+          // Conversation đã tồn tại
+          dispatch(
+            setSelectedConversation({
+              _id: res.data.conversation._id,
+              participants: res.data.conversation.participants,
+              isGroup: false,
+              lastRead: res.data.conversation.lastRead,
+              unread: res.data.conversation.unread,
+            })
+          );
+          dispatch(setMessages(res.data.messages));
+        } else {
+          // Conversation chưa tồn tại
+          dispatch(
+            setSelectedConversation({
+              _id: `temp-${userProfile._id}`, // ID tạm thời
+              participants: [profile._id, userProfile._id].sort(), // Sắp xếp participants
+              isGroup: false,
+              lastRead: new Map([
+                [profile._id, null],
+                [userProfile._id, null],
+              ]),
+              unread: false,
+            })
+          );
+          dispatch(setMessages([])); // messages = 0
+        }
         navigate("/direct/inbox");
       } else {
         toast.error(res.data.error || "Failed to start conversation");
@@ -229,14 +263,22 @@ const Profile = () => {
     }
   };
   if (loading) {
-    return <p className="text-center py-10">Đang tải...</p>;
+    return (
+      <p className="text-center py-10 text-slate-900 dark:text-slate-100">
+        {t("common.loading")}
+      </p>
+    );
   }
 
   const displayedPost =
-    activeTab === "posts" ? userPost : activeTab === "saved" ? bookmarks : [];
+    activeTab === "posts"
+      ? userPost
+      : activeTab === "saved"
+      ? bookmarks?.map((bookmark) => bookmark.post)
+      : [];
 
   return (
-    <div className="flex max-w-4xl justify-center mx-auto pl-10">
+    <div className="flex max-w-4xl justify-center mx-auto pl-10 bg-white dark:bg-slate-900">
       <div className="flex flex-col gap-8 p-8 w-full">
         <div className="grid grid-cols-2">
           {/* avatar */}
@@ -262,102 +304,111 @@ const Profile = () => {
           <section>
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-2">
-                <span>{userProfile?.username}</span>
+                <span className="text-slate-900 dark:text-slate-100">
+                  {userProfile?.username}
+                </span>
                 {isCurrentUser ? (
                   <>
                     <Link to="/accounts/edit">
                       <Button
                         variant="secondary"
-                        className="hover:bg-gray-200 h-8"
+                        className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:bg-slate-700 h-8"
                       >
-                        Edit Profile
+                        {t("settings.editProfile")}
                       </Button>
                     </Link>
                     <Button
                       variant="secondary"
-                      className="hover:bg-gray-200 h-8"
+                      className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:bg-slate-700 h-8"
                     >
-                      View archive
+                      {t("profile.viewArchive")}
                     </Button>
                   </>
                 ) : userProfile?.isFollowing && userProfile?.isAccepted ? (
                   <>
                     <Button
                       variant="secondary"
-                      className="hover:bg-gray-200 h-8 flex items-center justify-center gap-1"
+                      className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:bg-slate-700 h-8 flex items-center justify-center gap-1"
                       onClick={unfollowHandler}
                       disabled={actionLoading}
                     >
                       {actionLoading ? (
                         <Loader2 className="animate-spin h-4 w-4" />
                       ) : (
-                        "Unfollow"
+                        t("profile.unfollow")
                       )}
                     </Button>
                     <Button
-                      className="bg-[#0095F6] hover:bg-[#3192d2] h-8"
+                      className="text-blue-600-bg hover:text-blue-600-hover text-white h-8"
                       onClick={openConversationHandler}
                     >
-                      Message
+                      {t("profile.message")}
                     </Button>
                   </>
                 ) : userProfile?.isFollowing ? (
                   <Button
                     variant="secondary"
-                    className="hover:bg-gray-200 h-8 flex items-center justify-center gap-1"
+                    className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:bg-slate-700 h-8 flex items-center justify-center gap-1"
                     onClick={cancelRequestHandler}
                     disabled={actionLoading}
                   >
                     {actionLoading ? (
                       <Loader2 className="animate-spin h-4 w-4" />
                     ) : (
-                      "Pending Accept"
+                      t("profile.pendingAccept")
                     )}
                   </Button>
                 ) : (
                   <Button
-                    className="bg-[#0095F6] hover:bg-[#3192d2] h-8 flex items-center justify-center gap-1"
+                    className="text-blue-600-bg hover:text-blue-600-hover text-white h-8 flex items-center justify-center gap-1"
                     onClick={followHandler}
                     disabled={actionLoading}
                   >
                     {actionLoading ? (
                       <Loader2 className="animate-spin h-4 w-4" />
                     ) : (
-                      "Follow"
+                      t("profile.follow")
                     )}
                   </Button>
                 )}
               </div>
 
               <div className="flex items-center gap-4">
-                <p>
+                <p className="text-slate-900 dark:text-slate-100">
                   <span className="font-semibold">{userProfile?.posts}</span>{" "}
-                  posts
+                  {t("profile.posts")}
                 </p>
                 <p
-                  className="cursor-pointer hover:underline"
+                  className="cursor-pointer hover:underline text-slate-900 dark:text-slate-100"
                   onClick={() => openFollowDialog("followers")}
                 >
                   <span className="font-semibold">
                     {userProfile?.followers}
                   </span>{" "}
-                  followers
+                  {t("profile.followers")}
                 </p>
                 <p
-                  className="cursor-pointer hover:underline"
+                  className="cursor-pointer hover:underline text-slate-900 dark:text-slate-100"
                   onClick={() => openFollowDialog("following")}
                 >
                   <span className="font-semibold">
                     {userProfile?.followings}
                   </span>{" "}
-                  following
+                  {t("profile.following")}
                 </p>
               </div>
 
               <div className="flex flex-col gap-1">
-                <span className="font-semibold">{userProfile?.name}</span>
-                <span>{userProfile?.bio}</span>
-                <Badge className="w-fit" variant="secondary">
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {userProfile?.name}
+                </span>
+                <span className="text-slate-600 dark:text-slate-300">
+                  {userProfile?.bio}
+                </span>
+                <Badge
+                  className="w-fit bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  variant="secondary"
+                >
                   <AtSign />
                   <span className="pl-1">{userProfile?.username}</span>
                 </Badge>
@@ -372,8 +423,8 @@ const Profile = () => {
             <div
               className={`flex cursor-pointer px-4 pb-1 ${
                 activeTab === "posts"
-                  ? "text-black border-b-2 border-black"
-                  : "text-gray-400"
+                  ? "theme-text-primary border-b-2 theme-border-primary"
+                  : "theme-text-tertiary"
               }`}
               onClick={() => setActiveTab("posts")}
             >
@@ -384,8 +435,8 @@ const Profile = () => {
               <div
                 className={`flex cursor-pointer px-4 pb-1 ${
                   activeTab === "saved"
-                    ? "text-black border-b-2 border-black"
-                    : "text-gray-400"
+                    ? "theme-text-primary border-b-2 theme-border-primary"
+                    : "theme-text-tertiary"
                 }`}
                 onClick={() => setActiveTab("saved")}
               >
@@ -395,44 +446,71 @@ const Profile = () => {
           </div>
 
           {/* posts / bookmarks grid */}
-          <div className="border-t border-t-gray-200">
-            <div className="grid grid-cols-3 gap-1">
-              {displayedPost?.map((post) => (
-                <div
-                  key={post?._id}
-                  className="relative group cursor-pointer"
-                  onClick={() => {
-                    dispatch(setSelectedPost(post));
-                    setOpenComment(true);
-                  }}
-                >
-                  <img
-                    src={post.images[0]}
-                    alt="image"
-                    className="rounded-sm mt-1 w-full aspect-square object-cover"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black opacity-0 group-hover:opacity-50 group-hover:mt-1 transition-opacity">
-                    <div className="flex items-center text-white space-x-4">
-                      <div className="flex items-center gap-2">
-                        <Heart />
-                        <span>{post?.likes}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MessageCircle />
-                        <span>{post?.comments}</span>
+          <div className="border-t border-slate-200 dark:border-slate-700">
+            {displayedPost && displayedPost.length > 0 ? (
+              <div className="grid grid-cols-3 gap-1">
+                {displayedPost.map((post) => (
+                  <div
+                    key={post?._id}
+                    className="relative group cursor-pointer"
+                    onClick={() => {
+                      dispatch(setSelectedPost(post));
+                      setOpenComment(true);
+                    }}
+                  >
+                    <img
+                      src={post?.images?.[0] || "/placeholder-image.jpg"}
+                      alt="image"
+                      className="rounded-sm mt-1 w-full aspect-square object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black opacity-0 group-hover:opacity-50 group-hover:mt-1 transition-opacity">
+                      <div className="flex items-center text-white space-x-4">
+                        <div className="flex items-center gap-2">
+                          <Heart />
+                          <span>{post?.likes}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <MessageCircle />
+                          <span>{post?.comments}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                  {activeTab === "posts" ? (
+                    <TfiLayoutGrid3Alt size={24} className="text-slate-400" />
+                  ) : (
+                    <FaRegBookmark size={24} className="text-slate-400" />
+                  )}
                 </div>
-              ))}
-            </div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+                  {activeTab === "posts"
+                    ? t("profile.noPosts")
+                    : t("profile.noBookmarks")}
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                  {activeTab === "posts"
+                    ? isCurrentUser
+                      ? t("profile.noPostsDesc")
+                      : t("profile.noPostsDescOther")
+                    : t("profile.noBookmarksDesc")}
+                </p>
+              </div>
+            )}
+
             {(activeTab === "posts" ? hasMorePosts : hasMoreBookmarks) && (
               <div
                 ref={loadMoreRef}
                 className="h-10 flex items-center justify-center"
               >
                 {(postsLoading || bookmarksLoading) && (
-                  <p className="text-gray-500">Đang tải thêm...</p>
+                  <p className="text-slate-600 dark:text-slate-300">
+                    {t("profile.loadingMore")}
+                  </p>
                 )}
               </div>
             )}

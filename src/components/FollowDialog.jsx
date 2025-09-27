@@ -4,9 +4,11 @@ import axios from "axios";
 import { useFollowers, useFollowing } from "../hooks/useFollowHooks";
 import { Dialog, DialogContent } from "./ui/dialog";
 import { X } from "lucide-react";
-import { toast } from "sonner";
 import { removeFollower, removeFollowing } from "../redux/followSlice";
 import { Link } from "react-router-dom";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/contexts/ToastContext";
 
 const FollowDialog = ({
   userId,
@@ -18,6 +20,9 @@ const FollowDialog = ({
   const currentUser = useSelector((state) => state.auth.profile);
   const isCurrentUser = userId === currentUser?._id;
   const [activeTab, setActiveTab] = useState(initialTab);
+  const { isDark } = useTheme();
+  const { t } = useLanguage();
+  const { success, error } = useToast();
   const {
     followers,
     nextCursor: followersNextCursor,
@@ -84,7 +89,7 @@ const FollowDialog = ({
         );
         dispatch(removeFollowing(targetUserId));
 
-        toast.success("Đã hủy theo dõi");
+        success('toast.success.unfollowed');
       } else {
         const res = await axios.post(
           `http://localhost:5000/api/v1/user/${targetUserId}/follow`,
@@ -94,7 +99,7 @@ const FollowDialog = ({
           }
         );
 
-        toast.success("Đã theo dõi");
+        success('toast.success.followed');
       }
       if (activeTab === "followers") {
         loadMoreFollowers();
@@ -102,10 +107,8 @@ const FollowDialog = ({
         loadMoreFollowing();
       }
     } catch (error) {
-      console.error("Lỗi khi thay đổi trạng thái theo dõi:", error);
-      toast.error(
-        error.response?.data?.message || "Lỗi khi thay đổi trạng thái theo dõi"
-      );
+      console.error(t('profile.followError'), error);
+      error('toast.error.follow');
     }
   };
 
@@ -118,18 +121,16 @@ const FollowDialog = ({
         }
       );
       dispatch(removeFollower(targetUserId));
-      toast.success("Đã xóa người theo dõi");
+      success('toast.success.unfollowed');
       loadMoreFollowers();
     } catch (error) {
-      console.error("Lỗi khi xóa người theo dõi:", error);
-      toast.error(
-        error.response?.data?.message || "Lỗi khi xóa người theo dõi"
-      );
+      console.error(t('profile.removeFollowerError'), error);
+      error('toast.error.follow');
     }
   };
 
   const UserItem = ({ user, isFollowing }) => (
-    <div className="flex items-center justify-between p-3 hover:bg-gray-100">
+    <div className={`flex items-center justify-between p-3 ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}>
       <div className="flex items-center space-x-3">
         <Link to={`/profile/${user.username}`} onClick={onClose}>
           <img
@@ -141,8 +142,8 @@ const FollowDialog = ({
 
         <div>
           <Link to={`/profile/${user.username}`} onClick={onClose}>
-            <p className="font-semibold">{user.name}</p>
-            <p className="text-sm text-gray-500">@{user.username}</p>
+            <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{user.name}</p>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>@{user.username}</p>
           </Link>
         </div>
       </div>
@@ -162,10 +163,10 @@ const FollowDialog = ({
           }`}
         >
           {isCurrentUser && activeTab === "followers"
-            ? "Xóa"
+            ? t('common.delete')
             : isFollowing ?? false
-            ? "Hủy theo dõi"
-            : "Theo dõi"}
+            ? t('profile.unfollow')
+            : t('profile.follow')}
         </button>
       )}
     </div>
@@ -173,39 +174,39 @@ const FollowDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[90vw] max-w-[500px] h-[80vh] p-0 flex flex-col rounded-lg overflow-hidden border-none">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-lg font-semibold">
-            {isCurrentUser ? "Hồ sơ của bạn" : "Hồ sơ"}
+      <DialogContent className="w-[90vw] max-w-[500px] h-[80vh] p-0 flex flex-col rounded-lg overflow-hidden border-none bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+        <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700">
+          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            {isCurrentUser ? t('profile.yourProfile') : t('profile.profile')}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className={`${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="flex border-b">
+        <div className="flex border-b border-slate-200 dark:border-slate-700">
           <button
             className={`flex-1 p-4 text-center ${
               activeTab === "followers"
                 ? "border-b-2 border-blue-500 font-semibold"
-                : "text-gray-500"
-            }`}
+                : isDark ? "text-gray-400" : "text-gray-500"
+            } ${isDark ? 'text-white' : 'text-gray-900'}`}
             onClick={() => setActiveTab("followers")}
           >
-            Người theo dõi
+            {t('profile.followers')}
           </button>
           <button
             className={`flex-1 p-4 text-center ${
               activeTab === "following"
                 ? "border-b-2 border-blue-500 font-semibold"
-                : "text-gray-500"
-            }`}
+                : isDark ? "text-gray-400" : "text-gray-500"
+            } ${isDark ? 'text-white' : 'text-gray-900'}`}
             onClick={() => setActiveTab("following")}
           >
-            Đang theo dõi
+            {t('profile.following')}
           </button>
         </div>
 
@@ -218,14 +219,14 @@ const FollowDialog = ({
           {(followersLoading || followingLoading) &&
             !followers.length &&
             !following.length && (
-              <p className="text-center text-gray-500">Đang tải...</p>
+              <p className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('common.loading')}</p>
             )}
 
           {activeTab === "followers" && (
             <div>
               {followers.length === 0 && !followersLoading && (
-                <p className="text-center text-gray-500">
-                  Chưa có người theo dõi
+                <p className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('profile.noFollowers')}
                 </p>
               )}
               {followers.map((follow) => (
@@ -243,7 +244,7 @@ const FollowDialog = ({
           {activeTab === "following" && (
             <div>
               {following.length === 0 && !followingLoading && (
-                <p className="text-center text-gray-500">Chưa theo dõi ai</p>
+                <p className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('profile.notFollowingAnyone')}</p>
               )}
               {following.map((follow) => (
                 <UserItem
@@ -265,7 +266,7 @@ const FollowDialog = ({
               className="h-10 flex items-center justify-center"
             >
               {(followersLoading || followingLoading) && (
-                <p className="text-gray-500">Đang tải thêm...</p>
+                <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('profile.loadingMore')}</p>
               )}
             </div>
           )}

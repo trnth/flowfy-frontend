@@ -8,12 +8,7 @@ const useGetNewFeed = () => {
   useEffect(() => {
     const fetchNewFeed = async () => {
       try {
-        const res = await axios.get(
-          "http://localhost:5000/api/v1/post/newfeeds",
-          {
-            withCredentials: true,
-          }
-        );
+        const res = await axios.get(`/post/newfeeds`);
         if (res.data.success) {
           console.log(res.data.posts);
           dispatch(setPosts(res.data.posts));

@@ -10,12 +10,7 @@ const useVerified = () => {
     const verify = async () => {
       dispatch(setLoading(true));
       try {
-        const res = await axios.get(
-          "http://localhost:5000/api/v1/auth/verified",
-          {
-            withCredentials: true,
-          }
-        );
+        const res = await axios.get(`/auth/verified`);
         if (res.data.user) {
           dispatch(setVerified(res.data.user));
         }

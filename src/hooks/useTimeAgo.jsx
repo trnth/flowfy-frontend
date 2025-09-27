@@ -9,9 +9,11 @@ import {
   differenceInMonths,
   differenceInYears,
 } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function useTimeAgo(date) {
   const [timeAgo, setTimeAgo] = useState("");
+  const { t } = useLanguage();
   const target = new Date(date);
 
   const getTime = () => {
@@ -25,14 +27,14 @@ export function useTimeAgo(date) {
     const months = differenceInMonths(now, target);
     const years = differenceInYears(now, target);
 
-    if (seconds < 60) return "Vừa xong";
-    if (minutes < 60) return `${minutes} phút`;
-    if (hours < 24) return `${hours} giờ`;
-    if (days === 1) return "Hôm qua";
-    if (days < 7) return `${days} ngày`;
-    if (weeks < 4) return `${weeks} tuần`;
-    if (months < 12) return `${months} tháng`;
-    return `${years} năm`;
+    if (seconds < 60) return t('time.justNow');
+    if (minutes < 60) return t('time.minutesAgo').replace('{count}', minutes);
+    if (hours < 24) return t('time.hoursAgo').replace('{count}', hours);
+    if (days === 1) return t('time.yesterday');
+    if (days < 7) return t('time.daysAgo').replace('{count}', days);
+    if (weeks < 4) return t('time.weeksAgo').replace('{count}', weeks);
+    if (months < 12) return t('time.monthsAgo').replace('{count}', months);
+    return t('time.yearsAgo').replace('{count}', years);
   };
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function useTimeAgo(date) {
 
     const timer = setInterval(() => setTimeAgo(getTime()), interval);
     return () => clearInterval(timer);
-  }, [date]);
+  }, [date, t]);
 
   return timeAgo;
 }

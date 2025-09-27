@@ -5,7 +5,6 @@ import Home from "@/components/Home";
 import {
   createBrowserRouter,
   RouterProvider,
-  useLocation,
 } from "react-router-dom";
 import Profile from "./components/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -17,6 +16,9 @@ import { useEffect } from "react";
 import useVerified from "./hooks/useVerified";
 import Setting from "./components/Setting";
 import { setSelectedConversation } from "./redux/chatSlice";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
+import { ToastProvider } from "./contexts/ToastContext";
 const browserRouter = createBrowserRouter([
   {
     path: "/",
@@ -66,11 +68,20 @@ function App() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (location.pathname !== "/direct/inbox/") {
+    const currentPath = window.location.pathname;
+    if (currentPath !== "/direct/inbox/") {
       dispatch(setSelectedConversation(null));
     }
-  }, [location.pathname, dispatch]);
+  }, [dispatch]);
 
-  return <RouterProvider router={browserRouter} />;
+  return (
+    <ThemeProvider>
+      <LanguageProvider>
+        <ToastProvider>
+          <RouterProvider router={browserRouter} />
+        </ToastProvider>
+      </LanguageProvider>
+    </ThemeProvider>
+  );
 }
 export default App;

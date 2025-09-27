@@ -1,8 +1,52 @@
 // utils/groupMessagesByTime.js
-import { formatDateForSeparator } from "./formatDateForSeparator";
-import { isSameDay } from "date-fns";
+import {
+  isToday,
+  isYesterday,
+  format,
+  differenceInCalendarDays,
+  isSameDay,
+} from "date-fns";
+import { vi, enUS } from "date-fns/locale";
 
-export function groupMessagesByTime(messages, { thresholdMinutes = 30 } = {}) {
+function formatDateForSeparator(date, locale = 'vi') {
+  const d = new Date(date);
+  const currentLocale = locale === 'vi' ? vi : enUS;
+
+  if (isToday(d)) {
+    return locale === 'vi' 
+      ? `Hôm nay lúc ${format(d, "HH:mm", { locale: currentLocale })}`
+      : `Today at ${format(d, "HH:mm", { locale: currentLocale })}`;
+  }
+  
+  if (isYesterday(d)) {
+    return locale === 'vi'
+      ? `Hôm qua lúc ${format(d, "HH:mm", { locale: currentLocale })}`
+      : `Yesterday at ${format(d, "HH:mm", { locale: currentLocale })}`;
+  }
+
+  const diffDays = differenceInCalendarDays(new Date(), d);
+
+  if (diffDays < 7) {
+    // trong tuần gần đây
+    return locale === 'vi'
+      ? `${format(d, "EEEE", { locale: currentLocale })} lúc ${format(d, "HH:mm", { locale: currentLocale })}`
+      : `${format(d, "EEEE", { locale: currentLocale })} at ${format(d, "HH:mm", { locale: currentLocale })}`;
+  }
+
+  if (diffDays < 365) {
+    // trong năm
+    return locale === 'vi'
+      ? `${format(d, "dd/MM", { locale: currentLocale })} lúc ${format(d, "HH:mm", { locale: currentLocale })}`
+      : `${format(d, "MM/dd", { locale: currentLocale })} at ${format(d, "HH:mm", { locale: currentLocale })}`;
+  }
+
+  // khác năm
+  return locale === 'vi'
+    ? `${format(d, "dd/MM/yyyy", { locale: currentLocale })} lúc ${format(d, "HH:mm", { locale: currentLocale })}`
+    : `${format(d, "MM/dd/yyyy", { locale: currentLocale })} at ${format(d, "HH:mm", { locale: currentLocale })}`;
+}
+
+export function groupMessagesByTime(messages, { thresholdMinutes = 30, locale = 'vi' } = {}) {
   if (!messages || messages.length === 0) return [];
 
   const groups = [];
@@ -35,7 +79,7 @@ export function groupMessagesByTime(messages, { thresholdMinutes = 30 } = {}) {
     if (needSeparator) {
       groups.push({
         type: "separator",
-        label: formatDateForSeparator(createdAt),
+        label: formatDateForSeparator(createdAt, locale),
         _id: `sep-${createdAt.getTime()}`,
       });
     }

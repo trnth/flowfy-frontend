@@ -6,10 +6,17 @@ const chatSlice = createSlice({
     conversations: [],
     messages: [],
     selectedConversation: null,
+    lastReadMessageId: null,
+    lastConversationId: null,
   },
   reducers: {
     setSelectedConversation: (state, action) => {
       state.selectedConversation = action.payload;
+      // Reset lastReadMessageId và lastConversationId khi chọn conversation mới
+      if (state.selectedConversation?._id !== state.lastConversationId) {
+        state.lastReadMessageId = null;
+        state.lastConversationId = null;
+      }
     },
     setConversation: (state, action) => {
       state.conversations = action.payload;
@@ -32,6 +39,8 @@ const chatSlice = createSlice({
       conversations: [],
       messages: [],
       selectedConversation: null,
+      lastReadMessageId: null,
+      lastConversationId: null,
     }),
     addOldMessages: (state, action) => {
       const newMessages = action.payload
@@ -45,6 +54,11 @@ const chatSlice = createSlice({
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sắp xếp newest -> oldest
       state.messages = [...state.messages, ...newMessages]; // Append tin cũ vào cuối
     },
+    setLastRead: (state, action) => {
+      const { lastMessageId, conversationId } = action.payload;
+      state.lastReadMessageId = lastMessageId;
+      state.lastConversationId = conversationId;
+    },
   },
 });
 
@@ -57,5 +71,6 @@ export const {
   addConversations,
   addOldMessages,
   reset: resetChat,
+  setLastRead,
 } = chatSlice.actions;
 export default chatSlice.reducer;

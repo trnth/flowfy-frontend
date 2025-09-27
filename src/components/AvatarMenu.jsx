@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { toast } from "sonner";
 import useEditAvatarDialog from "@/hooks/useEditAvatarDialog";
 import axios from "axios";
 import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
@@ -8,6 +7,7 @@ import { Ghost, User } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { setUserProfile } from "@/redux/userSlice";
 import { setProfile } from "@/redux/authSlice";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function AvatarMenu({ children }) {
   const {
@@ -16,6 +16,7 @@ export default function AvatarMenu({ children }) {
     Dialog: AvatarDialog,
   } = useEditAvatarDialog();
   const dispatch = useDispatch();
+  const { success, error } = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const handleRemoveAvatar = async () => {
     try {
@@ -26,10 +27,10 @@ export default function AvatarMenu({ children }) {
       if (res.data.success) {
         dispatch(setUserProfile(res.data.user));
         dispatch(setProfile(res.data.user));
-        toast.success("Đã gỡ avatar");
-      } else toast.error("Gỡ avatar thất bại");
+        success('toast.success.avatarUpdated');
+      } else error('toast.error.avatarUpdate');
     } catch (err) {
-      toast.error(err.response?.data?.message || "Lỗi khi gỡ avatar");
+      error('toast.error.avatarUpdate');
     } finally {
       setMenuOpen(false);
     }

@@ -1,34 +1,31 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import ReactCrop from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useDispatch } from "react-redux";
 import axios from "axios";
-import { setProfile } from "@/redux/authSlice";
-import { setUserProfile } from "@/redux/userSlice";
 import { useToast } from "@/contexts/ToastContext";
 
-export default function EditAvatar({ open, onClose, imageSrc, fileInputRef }) {
-  const dispatch = useDispatch();
-  const { success, error } = useToast();
-
+export default function EditGroupPicture({
+  open,
+  onClose,
+  imageSrc,
+  conversationId,
+  fileInputRef,
+  onSaved,
+}) {
   const [crop, setCrop] = useState(null);
   const [completedCrop, setCompletedCrop] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [croppedBlob, setCroppedBlob] = useState(null);
   const [loading, setLoading] = useState(false);
   const imgRef = useRef(null);
+  const { success, error } = useToast();
 
   const onImageLoad = useCallback((e) => {
     if (!e.currentTarget) return;
     const { width, height } = e.currentTarget;
-    const size = Math.min(width, height) * 0.8;
+    const size = Math.min(width, height) * 0.9;
     const newCrop = {
       unit: "px",
       width: size,
@@ -82,24 +79,24 @@ export default function EditAvatar({ open, onClose, imageSrc, fileInputRef }) {
   }, [completedCrop]);
 
   const handleSave = useCallback(async () => {
-    if (!croppedBlob) {
-      toast.error("Chưa có ảnh preview để lưu.");
+    if (!croppedBlob || !conversationId) {
+      toast.error("Chưa có ảnh cắt hoặc thiếu conversationId.");
       return;
     }
-
     setLoading(true);
     const formData = new FormData();
-    formData.append("profilePicture", croppedBlob, "avatar.jpg");
-
+    formData.append("groupPicture", croppedBlob, "group.jpg");
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/v1/user/profile/edit/profilePicture",
+      const res = await axios.patch(
+        `/message/group/${conversationId}/picture`,
         formData,
-        { withCredentials: true }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
-      if (res.data.success) {
-        dispatch(setUserProfile(res.data.user));
-        dispatch(setProfile(res.data.user));
+      if (res.data?.conversation?.groupPicture) {
+        success('toast.success.avatarUpdated');
+        if (typeof onSaved === "function") onSaved(res.data.conversation.groupPicture);
+        handleCancel();
+      } else {
         success('toast.success.avatarUpdated');
         handleCancel();
       }
@@ -108,7 +105,7 @@ export default function EditAvatar({ open, onClose, imageSrc, fileInputRef }) {
     } finally {
       setLoading(false);
     }
-  }, [croppedBlob]);
+  }, [croppedBlob, conversationId]);
 
   const handleCancel = () => {
     setCrop(null);
@@ -116,9 +113,8 @@ export default function EditAvatar({ open, onClose, imageSrc, fileInputRef }) {
     setCroppedBlob(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
-
-    if (fileInputRef?.current) fileInputRef.current.value = null; // reset file input
-    onClose();
+    if (fileInputRef?.current) fileInputRef.current.value = null;
+    onClose(false);
   };
 
   useEffect(() => {
@@ -129,17 +125,10 @@ export default function EditAvatar({ open, onClose, imageSrc, fileInputRef }) {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleCancel()}>
-      <DialogContent
-        className={`max-w-md sm:max-w-lg flex flex-col transition-all duration-300 ${
-          previewUrl ? "h-[400px]" : "h-[80vh]"
-        }`}
-      >
+      <DialogContent className={`max-w-md sm:max-w-lg flex flex-col ${previewUrl ? "h-[400px]" : "h-[80vh]"}`}>
         <DialogHeader className="shrink-0">
-          <DialogTitle>
-            {previewUrl ? "Xem trước Avatar" : "Chỉnh sửa Avatar"}
-          </DialogTitle>
+          <DialogTitle>{previewUrl ? "Xem trước ảnh nhóm" : "Chỉnh sửa ảnh nhóm"}</DialogTitle>
         </DialogHeader>
-
         <div className="flex-1 overflow-auto p-2 flex justify-center items-center max-h-[calc(80vh-100px)]">
           {!previewUrl && imageSrc && (
             <ReactCrop
@@ -150,60 +139,28 @@ export default function EditAvatar({ open, onClose, imageSrc, fileInputRef }) {
               circularCrop
               style={{ display: "block", margin: "0 auto", maxHeight: "100%" }}
             >
-              <img
-                ref={imgRef}
-                src={imageSrc}
-                alt="Ảnh cần cắt"
-                onLoad={onImageLoad}
-                className="max-h-full max-w-none"
-              />
+              <img ref={imgRef} src={imageSrc} alt="Ảnh cần cắt" onLoad={onImageLoad} className="max-h-full max-w-none" />
             </ReactCrop>
           )}
-
           {previewUrl && (
             <div className="flex flex-col items-center gap-2">
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className="w-32 h-32 rounded-full object-cover border-4 border-gray-200"
-              />
-              <p className="text-sm text-gray-600">
-                Preview (sẽ hiển thị như hình tròn)
-              </p>
+              <img src={previewUrl} alt="Preview" className="w-32 h-32 rounded-full object-cover border-4 border-gray-200" />
+              <p className="text-sm text-gray-600">Preview (hình tròn)</p>
             </div>
           )}
         </div>
-
         <div className="shrink-0 mt-4 flex justify-center gap-2 border-t pt-3">
           {!previewUrl ? (
             <>
-              <Button variant="secondary" onClick={handleCancel}>
-                Hủy
-              </Button>
+              <Button variant="secondary" onClick={handleCancel}>Hủy</Button>
               {imageSrc && (
-                <Button
-                  onClick={generateCroppedImage}
-                  disabled={!completedCrop || !completedCrop.width}
-                >
-                  Xem Preview
-                </Button>
+                <Button onClick={generateCroppedImage} disabled={!completedCrop || !completedCrop.width}>Xem Preview</Button>
               )}
             </>
           ) : (
             <>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  if (previewUrl) URL.revokeObjectURL(previewUrl);
-                  setPreviewUrl(null);
-                  setCroppedBlob(null);
-                }}
-              >
-                Chỉnh lại
-              </Button>
-              <Button onClick={handleSave} disabled={loading}>
-                {loading ? "Đang lưu..." : "Lưu"}
-              </Button>
+              <Button variant="secondary" onClick={() => { if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); setCroppedBlob(null); }}>Chỉnh lại</Button>
+              <Button onClick={handleSave} disabled={loading}>{loading ? "Đang lưu..." : "Lưu"}</Button>
             </>
           )}
         </div>
@@ -211,3 +168,5 @@ export default function EditAvatar({ open, onClose, imageSrc, fileInputRef }) {
     </Dialog>
   );
 }
+
+

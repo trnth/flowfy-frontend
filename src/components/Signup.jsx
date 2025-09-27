@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
-import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import Login from "./Login";
 import { Loader2 } from "lucide-react";
@@ -15,6 +14,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useToast } from "@/contexts/ToastContext";
 const Signup = () => {
   const [input, setInput] = useState({
     username: "",
@@ -25,6 +27,9 @@ const Signup = () => {
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { isDark } = useTheme();
+  const { t } = useLanguage();
+  const { success, error } = useToast();
   const labelMap = {
     male: "Male",
     female: "Female",
@@ -50,7 +55,7 @@ const Signup = () => {
       );
       if (res.data.success) {
         navigate("/login");
-        toast.success(res.data.message);
+        success('toast.success.signup');
         setInput({
           username: "",
           name: "",
@@ -61,27 +66,27 @@ const Signup = () => {
       }
     } catch (error) {
       console.log(error);
-      toast.error(error.response.data.message);
+      error('toast.error.signup');
     } finally {
       setLoading(false);
     }
   };
   return (
-    <div>
+    <div className="bg-white dark:bg-slate-900 min-h-screen">
       <div className="flex items-center w-screen h-screen justify-center">
         <form
-          className="w-full max-w-sm rounded-2xl bg-white shadow-lg flex flex-col gap-1 p-4"
+          className="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 theme-shadow-lg flex flex-col gap-1 p-4 border-slate-200 dark:border-slate-700 border"
           onSubmit={signUpHandler}
           method="post"
         >
           <div className="my-4">
-            <h1 className="text-center font-bold text-2xl">Flowfy</h1>
-            <p className="text-center italic text-sm">
-              Sign Up to "flow" with your friends
+            <h1 className="text-center font-bold text-2xl text-slate-900 dark:text-slate-100">Flowfy</h1>
+            <p className="text-center italic text-sm text-slate-600 dark:text-slate-300">
+              {t('auth.signupToFlow')}
             </p>
           </div>
           <div>
-            <span className="font-medium">Username</span>
+            <span className="font-medium text-slate-900 dark:text-slate-100">{t('auth.username')}</span>
             <Input
               type="text"
               name="username"
@@ -91,7 +96,7 @@ const Signup = () => {
             />
           </div>
           <div>
-            <span className="font-medium">Name</span>
+            <span className="font-medium text-slate-900 dark:text-slate-100">{t('auth.name')}</span>
             <Input
               type="text"
               name="name"
@@ -101,7 +106,7 @@ const Signup = () => {
             />
           </div>
           <div>
-            <span className="font-medium">Email</span>
+            <span className="font-medium text-slate-900 dark:text-slate-100">{t('auth.email')}</span>
             <Input
               type="email"
               name="email"
@@ -111,11 +116,11 @@ const Signup = () => {
             />
           </div>
           <div className="flex justify-between ">
-            <span className="font-medium">Gender</span>
+            <span className="font-medium text-slate-900 dark:text-slate-100">{t('auth.gender')}</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
-                  {input.gender ? labelMap[input.gender] : "Select gender"}
+                  {input.gender ? labelMap[input.gender] : t('auth.selectGender')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
@@ -127,20 +132,20 @@ const Signup = () => {
                   }
                 >
                   <DropdownMenuRadioItem value="male">
-                    Male
+                    {t('auth.male')}
                   </DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="female">
-                    Female
+                    {t('auth.female')}
                   </DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="other">
-                    Other
+                    {t('auth.other')}
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
           <div>
-            <span className="font-medium">Password</span>
+            <span className="font-medium text-slate-900 dark:text-slate-100">{t('auth.password')}</span>
             <Input
               type="password"
               name="password"
@@ -155,13 +160,13 @@ const Signup = () => {
             </Button>
           ) : (
             <Button type="submit" className="mt-4 w-full">
-              Sign Up
+              {t('auth.signup')}
             </Button>
           )}
-          <span className="text-center italic">
-            Already have an account ?{" "}
-            <Link to="/login" className="text-blue-600">
-              Log in
+          <span className="text-center italic text-slate-600 dark:text-slate-300">
+            {t('auth.alreadyHaveAccount')} ?{" "}
+            <Link to="/login" className="text-blue-600 hover:text-blue-600-hover">
+              {t('auth.login')}
             </Link>
           </span>
         </form>

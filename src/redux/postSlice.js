@@ -50,6 +50,27 @@ const postSlice = createSlice({
     setError: (state, action) => {
       state.error = action.payload;
     },
+    updatePost: (state, action) => {
+      const { postId, updates } = action.payload;
+      const postIndex = state.posts.findIndex(post => post._id === postId);
+      if (postIndex !== -1) {
+        state.posts[postIndex] = { ...state.posts[postIndex], ...updates };
+      }
+      // Cập nhật selectedPost nếu đang được chọn
+      if (state.selectedPost?._id === postId) {
+        state.selectedPost = { ...state.selectedPost, ...updates };
+      }
+    },
+    addCommentToPost: (state, action) => {
+      const { postId, comment } = action.payload;
+      const postIndex = state.posts.findIndex(post => post._id === postId);
+      if (postIndex !== -1) {
+        state.posts[postIndex].comments = (state.posts[postIndex].comments || 0) + 1;
+      }
+      if (state.selectedPost?._id === postId) {
+        state.selectedPost.comments = (state.selectedPost.comments || 0) + 1;
+      }
+    },
     reset: (state) => ({
       posts: [],
       userPost: [],
@@ -74,6 +95,8 @@ export const {
   setSelectedPost,
   setLoading,
   setError,
+  updatePost,
+  addCommentToPost,
   reset: resetPost,
 } = postSlice.actions;
 

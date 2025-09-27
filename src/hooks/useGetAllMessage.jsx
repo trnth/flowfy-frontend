@@ -24,10 +24,9 @@ const useGetAllMessage = () => {
     setIsFetching(true);
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/v1/message/${selectedConversation._id}/all`,
+        `/message/${selectedConversation._id}/all`,
         {
           params: { lastMessageCreatedAt },
-          withCredentials: true,
         }
       );
 

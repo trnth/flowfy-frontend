@@ -20,10 +20,7 @@ const useUserPosts = (userId, limit = 5) => {
       const params = { limit };
       if (cursor) params.lastCreatedAt = cursor;
 
-      const res = await axios.get(
-        `http://localhost:5000/api/v1/user/${userId}/post`,
-        { params, withCredentials: true }
-      );
+      const res = await axios.get(`/user/${userId}/post`, { params });
 
       if (res.data.success) {
         const newPosts = res.data.posts;
